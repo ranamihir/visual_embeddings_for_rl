@@ -1,8 +1,14 @@
 import torch
 import torch.nn as nn
 
+
+def conv3x3(in_channels, out_channels, stride=1):
+    return nn.Conv2d(in_channels, out_channels, kernel_size=3, 
+                     stride=stride, padding=1, bias=False)
+
+
 class EmbeddingNetwork(nn.Module):
-    def __init__(self, num_inputs, num_outputs):
+    def __init__(self, in_channels, out_channels,stride=1):
         super(EmbeddingNetwork, self).__init__()
         self.conv1 = nn.Conv2d(3, 48, kernel_size=5)
         self.pool = nn.MaxPool2d(2)
