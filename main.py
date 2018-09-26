@@ -13,18 +13,22 @@ from capstone_project.models.embedding_network import EmbeddingNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
 from capstone_project.utils import train, test, accuracy
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from torchviz import make_dot, make_dot_from_trace
 
 
-def main():
-    # Options
-    DATASET = 'moving_mnist'
-    TEST_SIZE, VAL_SIZE = 0.2, 0.2
-    BATCH_SIZE = 64   # input batch size for training
-    N_EPOCHS = 10       # number of epochs to train
-    LR = 0.01        # learning rate
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+# Options
+DATASET = 'moving_mnist'
+TEST_SIZE, VAL_SIZE = 0.2, 0.2
+BATCH_SIZE = 64   # input batch size for training
+N_EPOCHS = 10       # number of epochs to train
+LR = 0.01        # learning rate
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+
+def main():
     data = np.load('/home/mihir/Desktop/GitHub/nyu/capstone_project/data/mnist_test_seq.npy')
     data = np.swapaxes(data, 0, 1)
     train_loader, val_loader, test_loader = generate_dataloader(data, TEST_SIZE, VAL_SIZE, BATCH_SIZE)
@@ -86,7 +90,6 @@ def main():
         classification_input = torch.dot(embedding_output1, embedding_output2)
         trace, _ = torch.jit.get_trace_graph(classification_network, args=(classification_input,))
     make_dot_from_trace(trace)
-
 
     loss_history_df = pd.DataFrame({
         'train': train_loss_history,
