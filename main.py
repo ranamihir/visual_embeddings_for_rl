@@ -8,11 +8,10 @@ from torch.autograd import Variable
 from torchvision.utils import make_grid
 from torch.utils.data.sampler import Sampler
 
-import capstone_project
-from preprocessing import generate_dataloader
+from capstone_project.preprocessing import generate_dataloader
 from capstone_project.models.embedding_network import EmbeddingNetwork
-from capstone_project.classification_network import ClassificationNetwork
-from utils import train, test, accuracy, imshow
+from capstone_project.models.classification_network import ClassificationNetwork
+from capstone_project.utils import train, test, accuracy
 
 import matplotlib
 matplotlib.use('Agg')
@@ -31,7 +30,6 @@ def main():
 
     data = np.load('/home/mihir/Desktop/GitHub/nyu/capstone_project/data/mnist_test_seq.npy')
     data = np.swapaxes(data, 0, 1)
-
     train_loader, val_loader, test_loader = generate_dataloader(data, TEST_SIZE, VAL_SIZE, BATCH_SIZE)
 
     if DATASET == 'moving_mnist':
