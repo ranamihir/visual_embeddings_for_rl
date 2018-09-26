@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,7 +12,7 @@ from torch.utils.data.sampler import Sampler
 from capstone_project.preprocessing import generate_dataloader
 from capstone_project.models.embedding_network import EmbeddingNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
-from capstone_project.utils import train, test, accuracy
+from capstone_project.utils import train, test, accuracy, save_plot
 
 import matplotlib
 matplotlib.use('Agg')
@@ -19,18 +20,19 @@ import matplotlib.pyplot as plt
 from torchviz import make_dot, make_dot_from_trace
 
 
-def main():
-    # Options
-    DATASET = 'moving_mnist'
-    TEST_SIZE, VAL_SIZE = 0.2, 0.2
-    BATCH_SIZE = 64   # input batch size for training
-    N_EPOCHS = 10       # number of epochs to train
-    LR = 0.01        # learning rate
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+# Options
+PROJECT_DIR = '/home/mihir/Desktop/GitHub/nyu/capstone_project/'
+DATASET = 'moving_mnist'
+TEST_SIZE, VAL_SIZE = 0.2, 0.2
+BATCH_SIZE = 64   # input batch size for training
+N_EPOCHS = 10       # number of epochs to train
+LR = 0.01        # learning rate
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    data = np.load('/home/mihir/Desktop/GitHub/nyu/capstone_project/data/mnist_test_seq.npy')
+def main():
+    data = np.load(os.path.join(PROJECT_DIR, 'data/mnist_test_seq.npy'))
     data = np.swapaxes(data, 0, 1)
-    train_loader, val_loader, test_loader = generate_dataloader(data, TEST_SIZE, VAL_SIZE, BATCH_SIZE)
+    train_loader, val_loader, test_loader = generate_dataloader(data, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR)
 
     if DATASET == 'moving_mnist':
         num_inputs, n_channels = 64, 1
@@ -90,12 +92,14 @@ def main():
         trace, _ = torch.jit.get_trace_graph(classification_network, args=(classification_input,))
     make_dot_from_trace(trace)
 
-
     loss_history_df = pd.DataFrame({
         'train': train_loss_history,
         'test': test_loss_history,
     })
+
+    fig = plt.figure()
     loss_history_df.plot(alpha=0.5, figsize=(10,8))
+    save_plot(PROJECT_DIR, fig, 'loss_vs_iterations.png')
 
 if __name__ == '__main__':
     main()
