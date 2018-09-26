@@ -1,0 +1,12 @@
+name: capstone_project
+dependencies:
+  - python==3.6.5
+  - numpy
+  - pandas
+  - matplotlib
+  - nb_conda
+  - pip:
+    - scikit-learn
+    - torch==0.4.1.post2
+    - torchvision
+    - "git+https://github.com/szagoruyko/pytorchviz"
