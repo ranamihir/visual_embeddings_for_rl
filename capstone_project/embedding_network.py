@@ -1,20 +1,10 @@
 import torch
 import torch.nn as nn
 
-# options
-DATASET = 'moving_mnist'
-
-if DATASET == 'moving_mnist':
-    num_inputs, n_channels = 64, 1
-    num_outputs = 6
-elif DATASET == 'cifar10':
-    num_inputs, n_channels = 32, 3
-    num_outputs = 10
-
 class EmbeddingNetwork(nn.Module):
     def __init__(self, num_inputs, num_outputs):
         super(EmbeddingNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=5)
+        self.conv1 = nn.Conv2d(3, 48, kernel_size=5)
         self.pool = nn.MaxPool2d(2)
         self.conv2 = nn.Conv2d(16, 128, kernel_size=5)
         self.fc1 = nn.Linear(128*5*5, 64)

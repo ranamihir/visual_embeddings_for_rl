@@ -1,16 +1,6 @@
 import torch
 import torch.nn as nn
 
-# options
-DATASET = 'moving_mnist'
-
-if DATASET == 'moving_mnist':
-    num_inputs, n_channels = 64, 1
-    num_outputs = 6
-elif DATASET == 'cifar10':
-    num_inputs, n_channels = 32, 3
-    num_outputs = 10
-
 class ClassificationNetwork(nn.Module):
     def __init__(self, num_inputs, num_outputs):
         super(ClassificationNetwork, self).__init__()

@@ -12,11 +12,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-
-# options
-DATASET = 'moving_mnist'
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-
 def imshow(data_loader):
     data_iter = iter(data_loader)
     images = data_iter.next()
@@ -27,9 +22,6 @@ def imshow(data_loader):
     plt.figure(figsize=(50, 20))
     plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
 
-# Data Loading
-# Warning: this cell might take some time when you run it for the first time,
-#          because it will download the datasets from the internet
 def generate_dataloader(dataset, test_size, val_size, batch_size):
     dataset = torch.from_numpy(dataset)
 
