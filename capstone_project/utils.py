@@ -69,4 +69,4 @@ def save_plot(project_dir, fig, filename):
     plot_path = os.path.join(project_dir, 'plots')
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
-    fig.savefig(os.path.join(plot_path, 'data_sample.png'))
+    fig.savefig(os.path.join(plot_path, filename))
