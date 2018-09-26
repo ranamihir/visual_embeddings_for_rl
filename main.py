@@ -13,9 +13,6 @@ from capstone_project.models.embedding_network import EmbeddingNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
 from capstone_project.utils import train, test, accuracy
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from torchviz import make_dot, make_dot_from_trace
 
 
