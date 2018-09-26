@@ -64,3 +64,9 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
 
     y_predicted = y_predicted.max(1)[1]
     return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
+
+def save_plot(project_dir, filename):
+    plot_path = os.path.join(project_dir, 'plots')
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    plt.savefig(os.path.join(plot_path, 'data_sample.png'))
