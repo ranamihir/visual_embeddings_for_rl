@@ -7,6 +7,6 @@ dependencies:
   - nb_conda
   - pip:
     - scikit-learn
-    - torch==0.4.1.post2
+    - torch==0.4.1
     - torchvision
     - "git+https://github.com/szagoruyko/pytorchviz"
