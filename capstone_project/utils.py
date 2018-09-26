@@ -4,7 +4,7 @@ import torch
 from torch.autograd import Variable
 
 
-def train(embedding_network, classification_network, dataloader, criterion, optimizer, epoch,device):
+def train(embedding_network, classification_network, dataloader, criterion, optimizer, device, epoch):
     embedding_network.train()
     classification_network.train()
     loss_train = 0.
@@ -30,7 +30,7 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
     optimizer.zero_grad()
     return loss_train
 
-def test(embedding_network, classification_network, dataloader, criterion,device):
+def test(embedding_network, classification_network, dataloader, criterion, device):
     embedding_network.eval()
     classification_network.eval()
     loss_test = 0.
@@ -53,12 +53,14 @@ def test(embedding_network, classification_network, dataloader, criterion,device
     optimizer.zero_grad()
     return loss_test, torch.cat(output_ls, dim=0), torch.cat(y_ls, dim=0)
 
-def accuracy(embedding_network, classification_network, dataloader, criterion):
+def accuracy(embedding_network, classification_network, dataloader, criterion, device):
     _, y_predicted, y_true = test(
         embedding_network=embedding_network,
         classification_network=classification_network,
         dataloader=dataloader,
-        criterion=criterion
+        criterion=criterion,
+        device=device
     )
+
     y_predicted = y_predicted.max(1)[1]
     return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
