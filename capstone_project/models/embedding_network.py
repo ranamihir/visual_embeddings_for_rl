@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-def conv3x3(in_channels, out_channels, stride=1, padding=1):
+def conv3x3(in_channels, out_channels, stride=1, padding=1,bias=False):
     return nn.Conv2d(in_channels, out_channels, kernel_size=3,
                      stride=stride, padding=padding, bias=False)
 
@@ -13,24 +13,26 @@ class ResidualBlock(nn.Module):
         super(ResidualBlock, self).__init__()
         self.conv1 = conv3x3(in_channels, out_channels, stride)
         self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
+        #self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(out_channels, out_channels)
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.downsample = downsample
 
-    def forward(self, x):
-        residual = x
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
+    def forward(self, input):
+        residual = input
+        output = self.conv1(input)
+        output = self.bn1(output)
+        output = self.relu(output)
+        output = self.conv2(output)
+        output = self.bn2(output)
         if self.downsample:
-            residual = self.downsample(x)
-        out += residual
-        out = self.relu(out)
-        return out
+            residual = self.downsample(input)
+        output += residual
+        output = self.relu(output)
+        return output
 
+
+def MakeResidualLayers
 
 class EmbeddingNetwork(nn.Module):
     def __init__(self, in_dim, in_channels, out_dim):
@@ -39,12 +41,13 @@ class EmbeddingNetwork(nn.Module):
         self.in_channels = in_channels
 
         self.conv1 = conv3x3(2, 32)
-        self.bn1 = nn.BatchNorm2d(64)
+        self.bn1 = nn.BatchNorm2d(32)
         self.conv2 = conv3x3(32, 64)
         self.bn2 = nn.BatchNorm2d(64)
         self.conv3 = conv3x3(64, 64)
         self.bn3 = nn.BatchNorm2d(64)
         self.pool = nn.MaxPool2d(2)
+
         self.fc1 = nn.Linear(64*16*16, 64)
         self.fc2 = nn.Linear(64, out_dim)
 
