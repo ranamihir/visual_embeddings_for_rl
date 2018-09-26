@@ -1,11 +1,6 @@
 import numpy as np
 import pandas as pd
-
 import torch
-import torch.nn as nn
-from torchvision import datasets, transforms
-from torch.autograd import Variable
-from torchvision.utils import make_grid
 from torch.utils.data.sampler import Sampler
 
 import matplotlib

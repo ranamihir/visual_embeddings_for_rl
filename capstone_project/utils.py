@@ -1,13 +1,7 @@
 import numpy as np
 import pandas as pd
-
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torchvision import datasets, transforms
 from torch.autograd import Variable
-from torchvision.utils import make_grid
-from torch.utils.data.sampler import Sampler
 
 
 def train(embedding_network, classification_network, dataloader, criterion, optimizer, epoch,device):
@@ -68,15 +62,3 @@ def accuracy(embedding_network, classification_network, dataloader, criterion):
     )
     y_predicted = y_predicted.max(1)[1]
     return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
-
-
-
-def imshow(data_loader):
-    data_iter = iter(data_loader)
-    images = data_iter.next()
-
-    images = make_grid(images[0].reshape(-1, 1, 64, 64), nrow=10)
-    np_image = images.numpy()
-
-    plt.figure(figsize=(50, 20))
-    plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
