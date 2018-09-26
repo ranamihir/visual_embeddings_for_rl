@@ -1,23 +1,46 @@
 import torch
 import torch.nn as nn
 
+
+def conv3x3(in_channels, out_channels, stride=1, padding=1):
+    return nn.Conv2d(in_channels, out_channels, kernel_size=3,
+                     stride=stride, padding=padding, bias=False)
+
 class EmbeddingNetwork(nn.Module):
-    def __init__(self, num_inputs, num_outputs):
+    def __init__(self, in_dim, in_channels, out_dim):
         super(EmbeddingNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(3, 48, kernel_size=5)
+        self.in_dim = in_dim
+        self.in_channels = in_channels
+
+        self.conv1 = conv3x3(2, 32)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.conv2 = conv3x3(32, 64)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.conv3 = conv3x3(64, 64)
+        self.bn3 = nn.BatchNorm2d(64)
         self.pool = nn.MaxPool2d(2)
-        self.conv2 = nn.Conv2d(16, 128, kernel_size=5)
-        self.fc1 = nn.Linear(128*5*5, 64)
-        self.fc2 = nn.Linear(64, num_outputs)
+        self.fc1 = nn.Linear(64*16*16, 64)
+        self.fc2 = nn.Linear(64, out_dim)
 
     def forward(self, input):
-        input = input.view(-1, 3, 64, 64) # reshape input to batch x num_inputs
-        output = torch.tanh(self.conv1(input))
+        # Reshape input to batch_size x in_channels x height x width
+        input = input.view(-1, self.in_channels, self.in_dim, self.in_dim)
+
+        output = self.conv1(input)
+        output = self.bn1(output)
+        output = torch.Relu(output)
+
+        output = self.conv2(output)
+        output = self.bn2(output)
+        output = torch.Relu(output)
         output = self.pool(output)
-        output = torch.tanh(self.conv2(output))
+
+        output = self.conv3(output)
+        output = self.bn3(output)
+        output = torch.Relu(output)
         output = self.pool(output)
-        output = output.view(-1, 128*5*5)
+
+        output = output.view(output.size(0), -1)
         output = self.fc1(output)
         output = self.fc2(output)
         return output
-
