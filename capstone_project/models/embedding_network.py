@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 
 
-def conv3x3(in_channels, out_channels, stride=1, padding=1,bias=False):
+def conv3x3(in_channels, out_channels, stride=1, padding=1, bias=False):
     return nn.Conv2d(in_channels, out_channels, kernel_size=3,
-                     stride=stride, padding=padding, bias=False)
+                     stride=stride, padding=padding, bias=bias)
 
 
 # Residual block
