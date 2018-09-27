@@ -36,7 +36,7 @@ class EmbeddingNetwork(nn.Module):
         super(EmbeddingNetwork, self).__init__()
         self.in_dim = in_dim
         self.in_channels = in_channels
-        #conv layers with downsample
+        # conv layers with downsample
         self.conv1 = conv3x3(2, 32)
         self.bn1 = nn.BatchNorm2d(32)
         self.conv2 = conv3x3(32, 64)
@@ -82,7 +82,7 @@ class EmbeddingNetwork(nn.Module):
         if not downsample and ((stride != 1) or (self.in_channels != out_channels)):
             downsample = nn.Sequential(conv3x3(self.in_channels, out_channels, stride=stride), nn.BatchNorm2d(out_channels))
 
-        layers = [block(in_channels, out_channels, stride, downsample))]
+        layers = [block(in_channels, out_channels, stride, downsample)]
         for i in range(num_blocks-1):
             # For residual blocks, in_channels = out_channels
             layers.append(block(out_channels, out_channels))
