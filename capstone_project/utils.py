@@ -13,8 +13,7 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
         optimizer.zero_grad()
         embedding_output1 = embedding_network(x1)
         embedding_output2 = embedding_network(x2)
-        classification_input = torch.dot(embedding_output1, embedding_output2)
-        classification_output = classification_network(classification_input)
+        classification_output = classification_network(embedding_output1, embedding_output2)
         loss = criterion(classification_output, y)
         loss.backward()
         optimizer.step()
@@ -41,8 +40,7 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
             x1, x2, y = Variable(x1).to(device), Variable(x2).to(device), Variable(y).to(device)
             embedding_output1 = embedding_network(x1)
             embedding_output2 = embedding_network(x2)
-            classification_input = torch.dot(embedding_output1, embedding_output2)
-            classification_output = classification_network(classification_input)
+            classification_output = classification_network(embedding_output1, embedding_output2)
             loss = criterion(classification_output, y)
 
             # Accurately compute loss, because of different batch size

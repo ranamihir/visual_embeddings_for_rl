@@ -35,16 +35,18 @@ def main():
     train_loader, val_loader, test_loader = generate_dataloader(data, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR)
 
     if DATASET == 'moving_mnist':
-        num_inputs, n_channels = 64, 1
+        in_dim, in_channels, out_dim = 64, 2, 1024
+        embedding_hidden_size, classification_hidden_size = 1024, 1024
         num_outputs = 6
     elif DATASET == 'cifar10':
-        num_inputs, n_channels = 32, 3
+        in_dim, in_channels, out_dim = 32, 3, 1024
+        embedding_hidden_size, classification_hidden_size = 1024, 1024
         num_outputs = 10
 
     train_loss_history = []
     test_loss_history = []
-    embedding_network = EmbeddingNetwork(num_inputs, num_outputs).to(DEVICE)
-    classification_network = ClassificationNetwork(num_inputs, num_outputs).to(DEVICE)
+    embedding_network = EmbeddingNetwork(in_dim, in_channels, out_dim, embedding_hidden_size).to(DEVICE)
+    classification_network = ClassificationNetwork(out_dim, num_outputs, classification_hidden_size).to(DEVICE)
 
     criterion_train = nn.CrossEntropyLoss()
     criterion_test = nn.CrossEntropyLoss(reduction='sum')

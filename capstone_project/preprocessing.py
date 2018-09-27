@@ -5,7 +5,6 @@ import torch
 from torch.utils.data.sampler import Sampler
 
 from capstone_project.utils import save_plot
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt

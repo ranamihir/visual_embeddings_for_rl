@@ -1,23 +1,26 @@
 import torch
 import torch.nn as nn
 
-class ClassificationNetwork(nn.Module):
-    def __init__(self, num_inputs, num_outputs):
-        super(ClassificationNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=5)
-        self.pool = nn.MaxPool2d(2)
-        self.conv2 = nn.Conv2d(16, 128, kernel_size=5)
-        self.fc1 = nn.Linear(128*5*5, 64)
-        self.fc2 = nn.Linear(64, num_outputs)
 
-    def forward(self, input):
-        input = input.view(-1, 3, 32, 32) # reshape input to batch x num_inputs
-        output = torch.tanh(self.conv1(input))
-        output = self.pool(output)
-        output = torch.tanh(self.conv2(output))
-        output = self.pool(output)
-        output = output.view(-1, 128*5*5)
-        output = self.fc1(output)
+class ClassificationNetwork(nn.Module):
+    def __init__(self, num_inputs, num_outputs=6, hidden_size=1024):
+        super(ClassificationNetwork, self).__init__()
+        self.fc1 = nn.Linear(num_inputs, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, num_outputs)
+
+        self._init_weights()
+
+    def forward(self, embedding_output1, embedding_output2):
+        input = torch.dot(embedding_output1, embedding_output2)
+        input = input.view(input.size(0), -1) # reshape input to batch_size x num_inputs
+        output = self.fc1(input)
+        output = torch.Relu(output)
         output = self.fc2(output)
+        output = torch.Relu(output)
         return output
 
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m._parameters['weight'])
+                nn.init.uniform_(m._parameters['bias'])
