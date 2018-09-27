@@ -7,6 +7,7 @@ class ClassificationNetwork(nn.Module):
         super(ClassificationNetwork, self).__init__()
         self.fc1 = nn.Linear(num_inputs, hidden_size)
         self.fc2 = nn.Linear(hidden_size, num_outputs)
+        self.relu = nn.ReLU(inplace=True)
 
         self._init_weights()
 
@@ -14,9 +15,9 @@ class ClassificationNetwork(nn.Module):
         input = torch.dot(embedding_output1, embedding_output2)
         input = input.view(input.size(0), -1) # reshape input to batch_size x num_inputs
         output = self.fc1(input)
-        output = torch.Relu(output)
+        output = self.relu(output)
         output = self.fc2(output)
-        output = torch.Relu(output)
+        output = self.relu(output)
         return output
 
     def _init_weights(self):

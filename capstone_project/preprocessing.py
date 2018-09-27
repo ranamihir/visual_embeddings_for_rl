@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import torch
+from torchvision.utils import make_grid
 from torch.utils.data.sampler import Sampler
 
 from capstone_project.utils import save_plot
@@ -20,7 +21,7 @@ def imshow(data_loader, project_dir):
     plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
     save_plot(project_dir, fig, 'data_sample.png')
 
-def generate_dataloader(dataset, test_size, val_size, batch_size):
+def generate_dataloader(dataset, test_size, val_size, batch_size, project_dir):
     dataset = torch.from_numpy(dataset)
 
     num_test = int(np.floor(test_size*len(dataset)))
@@ -31,9 +32,9 @@ def generate_dataloader(dataset, test_size, val_size, batch_size):
     train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(dataset, [num_train, num_val, num_test])
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     test_loader  = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
-    imshow(train_loader)
+    imshow(train_loader, project_dir)
 
     return train_loader, val_loader, test_loader
