@@ -54,7 +54,6 @@ def main():
     criterion_train = nn.CrossEntropyLoss()
     criterion_test = nn.CrossEntropyLoss(reduction='sum')
     optimizer = optim.SGD(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
-    # optimizer = optim.SGD(embedding_network.parameters(), lr=LR)
 
     for epoch in range(1, N_EPOCHS+1):
         train_loss = train(
