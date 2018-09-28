@@ -6,36 +6,40 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-from torchvision.utils import make_grid
 from torch.utils.data.sampler import Sampler
-
-from capstone_project.preprocessing import generate_dataloader
-from capstone_project.models.embedding_network import EmbeddingNetwork
-from capstone_project.models.classification_network import ClassificationNetwork
-from capstone_project.utils import train, test, accuracy, save_plot
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torchviz import make_dot, make_dot_from_trace
 
+from capstone_project.preprocessing import get_paired_data, generate_dataloader
+from capstone_project.models.embedding_network import EmbeddingNetwork
+from capstone_project.models.classification_network import ClassificationNetwork
+from capstone_project.utils import train, test, accuracy, save_plot
 
-# Options
+
+# Globals
 PROJECT_DIR = '/home/mihir/Desktop/GitHub/nyu/capstone_project/'
-DATASET = 'moving_mnist'
+DATA_DIR, PLOTS_DIR = 'data', 'plots'
+DATASET = 'mnist_test_seq.npy'
+NUM_ROWS = 1
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
-BATCH_SIZE = 64   # input batch size for training
-N_EPOCHS = 10       # number of epochs to train
-LR = 0.01        # learning rate
+BATCH_SIZE = 64     # input batch size for training
+N_EPOCHS = 1    # number of epochs to train
+LR = 0.01           # learning rate
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+NUM_FRAMES_IN_STACK = 1
+NUM_VIDEOS_PER_ROW = 1
+TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1)), list(range(11,20,1))]
 
 def main():
-    data = np.load(os.path.join(PROJECT_DIR, 'data/mnist_test_seq.npy'))
-    data = np.swapaxes(data, 0, 1)
-    train_loader, val_loader, test_loader = generate_dataloader(data, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR)
+    X, y = get_paired_data(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, NUM_ROWS, NUM_VIDEOS_PER_ROW, force=True)
+    train_loader, val_loader, test_loader = generate_dataloader(X, y, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR, PLOTS_DIR)
+    exit()
 
-    if DATASET == 'moving_mnist':
-        in_dim, in_channels, out_dim = 64, 2, 1024
+    if DATASET == 'mnist_test_seq.npy':
+        in_dim, in_channels, out_dim = 64, 1, 1024
         embedding_hidden_size, classification_hidden_size = 1024, 1024
         num_outputs = 6
     elif DATASET == 'cifar10':
@@ -51,6 +55,7 @@ def main():
     criterion_train = nn.CrossEntropyLoss()
     criterion_test = nn.CrossEntropyLoss(reduction='sum')
     optimizer = optim.SGD(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
+    # optimizer = optim.SGD(embedding_network.parameters(), lr=LR)
 
     for epoch in range(1, N_EPOCHS+1):
         train_loss = train(
@@ -81,15 +86,15 @@ def main():
 
     total_parameters_dict = dict(embedding_network.named_parameters())
     total_parameters_dict.update(dict(classification_network.named_parameters()))
-    embedding_output1 = embedding_network(train_loader.dataset[0][0].to(DEVICE))
-    embedding_output2 = embedding_network(train_loader.dataset[1][0].to(DEVICE))
+    embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, 64, 64).to(DEVICE).float())
+    embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, 64, 64).to(DEVICE).float())
     classification_input = torch.dot(embedding_output1, embedding_output2)
     classification_output = classification_network(classification_input)
     make_dot(classification_output, params=total_parameters_dict)
 
     with torch.onnx.set_training(network, False):
-        embedding_output1 = embedding_network(train_loader.dataset[0][0].to(DEVICE))
-        embedding_output2 = embedding_network(train_loader.dataset[1][0].to(DEVICE))
+        embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, 64, 64).to(DEVICE).float())
+        embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, 64, 64).to(DEVICE).float())
         classification_input = torch.dot(embedding_output1, embedding_output2)
         trace, _ = torch.jit.get_trace_graph(classification_network, args=(classification_input,))
     make_dot_from_trace(trace)
@@ -101,7 +106,7 @@ def main():
 
     fig = plt.figure()
     loss_history_df.plot(alpha=0.5, figsize=(10,8))
-    save_plot(PROJECT_DIR, fig, 'loss_vs_iterations.png')
+    save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
 
 if __name__ == '__main__':
     main()

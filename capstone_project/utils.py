@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 import torch
 from torch.autograd import Variable
 
@@ -19,11 +20,11 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
         optimizer.step()
 
         # Accurately compute loss, because of different batch size
-        loss_train += loss.item() * len(x) / len(dataloader.dataset)
+        loss_train += loss.item() * len(x1) / len(dataloader.dataset)
 
-        if batch_idx % 100 == 0:
+        if epoch % 1000 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(x), len(dataloader.dataset),
+                epoch, batch_idx * len(x1), len(dataloader.dataset),
                 100. * batch_idx / len(dataloader), loss.item()))
 
     optimizer.zero_grad()
@@ -63,8 +64,8 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
     y_predicted = y_predicted.max(1)[1]
     return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
 
-def save_plot(project_dir, fig, filename):
-    plot_path = os.path.join(project_dir, 'plots')
+def save_plot(project_dir, plots_dir, fig, filename):
+    plot_path = os.path.join(project_dir, plots_dir)
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
     fig.savefig(os.path.join(plot_path, filename))
