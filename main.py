@@ -36,7 +36,6 @@ TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1)), list(range(11,20,1))]
 def main():
     X, y = get_paired_data(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, NUM_ROWS, NUM_VIDEOS_PER_ROW, force=False)
     train_loader, val_loader, test_loader = generate_dataloader(X, y, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR, PLOTS_DIR)
-    exit()
 
     if DATASET == 'mnist_test_seq.npy':
         in_dim, in_channels, out_dim = 64, 1, 1024
