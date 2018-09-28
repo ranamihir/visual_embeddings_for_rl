@@ -25,7 +25,7 @@ DATA_DIR, PLOTS_DIR = 'data', 'plots'
 DATASET = 'mnist_test_seq.npy'
 NUM_ROWS = 1
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
-BATCH_SIZE = 64     # input batch size for training
+BATCH_SIZE = 16     # input batch size for training
 N_EPOCHS = 1    # number of epochs to train
 LR = 0.01           # learning rate
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -34,7 +34,7 @@ NUM_VIDEOS_PER_ROW = 1
 TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1)), list(range(11,20,1))]
 
 def main():
-    X, y = get_paired_data(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, NUM_ROWS, NUM_VIDEOS_PER_ROW, force=True)
+    X, y = get_paired_data(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, NUM_ROWS, NUM_VIDEOS_PER_ROW, force=False)
     train_loader, val_loader, test_loader = generate_dataloader(X, y, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR, PLOTS_DIR)
     exit()
 
@@ -83,6 +83,14 @@ def main():
         print('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
         print('TEST  Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, test_loss, accuracy_test))
 
+    loss_history_df = pd.DataFrame({
+        'train': train_loss_history,
+        'test': test_loss_history,
+    })
+
+    fig = plt.figure()
+    loss_history_df.plot(alpha=0.5, figsize=(10,8))
+    save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
 
     total_parameters_dict = dict(embedding_network.named_parameters())
     total_parameters_dict.update(dict(classification_network.named_parameters()))
@@ -98,15 +106,6 @@ def main():
         classification_input = torch.dot(embedding_output1, embedding_output2)
         trace, _ = torch.jit.get_trace_graph(classification_network, args=(classification_input,))
     make_dot_from_trace(trace)
-
-    loss_history_df = pd.DataFrame({
-        'train': train_loss_history,
-        'test': test_loss_history,
-    })
-
-    fig = plt.figure()
-    loss_history_df.plot(alpha=0.5, figsize=(10,8))
-    save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
 
 if __name__ == '__main__':
     main()
