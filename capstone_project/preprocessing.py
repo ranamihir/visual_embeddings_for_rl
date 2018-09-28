@@ -89,9 +89,10 @@ class MovingMNISTDataset(Dataset):
 
     def __getitem__(self, index):
         # Load data and get label
-        X = self.X[index]
+        x1 = self.X[index][0]
+        x2 = self.X[index][1]
         y = self.y[index]
-        return X, y
+        return x1, x2, y
 
     def __len__(self):
         return len(self.y)
