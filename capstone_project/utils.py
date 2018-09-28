@@ -10,19 +10,19 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
     classification_network.train()
     loss_train = 0.
     for batch_idx, (x1, x2, y) in enumerate(dataloader):
-        x1, x2, y = Variable(x1).to(device), Variable(x2).to(device), Variable(y).to(device)
+        x1, x2, y = Variable(x1).to(device).float(), Variable(x2).to(device).float(), Variable(y).to(device)
         optimizer.zero_grad()
         embedding_output1 = embedding_network(x1)
         embedding_output2 = embedding_network(x2)
         classification_output = classification_network(embedding_output1, embedding_output2)
-        loss = criterion(classification_output, y)
+        loss = criterion(classification_output, y.long())
         loss.backward()
         optimizer.step()
 
         # Accurately compute loss, because of different batch size
         loss_train += loss.item() * len(x1) / len(dataloader.dataset)
 
-        if epoch % 1000 == 0:
+        if batch_idx % 100 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(x1), len(dataloader.dataset),
                 100. * batch_idx / len(dataloader), loss.item()))
