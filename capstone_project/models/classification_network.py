@@ -25,5 +25,5 @@ class ClassificationNetwork(nn.Module):
     def _init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m._parameters['weight'])
-                nn.init.uniform_(m._parameters['bias'])
+                nn.init.xavier_normal_(m.weight)
+                nn.init.uniform_(m.bias)
