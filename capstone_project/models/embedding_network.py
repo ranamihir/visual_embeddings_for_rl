@@ -39,7 +39,7 @@ class EmbeddingNetwork(nn.Module):
         self.in_channels = in_channels
 
         # Conv-ReLU layers with batch-norm and downsampling
-        self.conv1 = conv3x3(1, 32)
+        self.conv1 = conv3x3(in_channels, 32)
         self.bn1 = nn.BatchNorm2d(32)
         self.conv2 = conv3x3(32, 64)
         self.bn2 = nn.BatchNorm2d(64)
@@ -97,12 +97,12 @@ class EmbeddingNetwork(nn.Module):
         return nn.Sequential(*layers)
 
     def _init_weights(self):
-        for layer in self.modules():
-            if isinstance(layer, nn.Conv2d):
-                nn.init.xavier_normal_(layer.weight)
-            elif isinstance(layer, nn.BatchNorm2d):
-                nn.init.constant_(layer.weight, 1)
-                nn.init.constant_(layer.bias, 0)
-            elif isinstance(layer, nn.Linear):
-                nn.init.xavier_normal_(layer.weight)
-                nn.init.uniform_(layer.bias)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                nn.init.uniform_(m.bias)
