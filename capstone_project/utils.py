@@ -42,7 +42,7 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
             embedding_output1 = embedding_network(x1)
             embedding_output2 = embedding_network(x2)
             classification_output = classification_network(embedding_output1, embedding_output2)
-            loss = criterion(classification_output, y)
+            loss = criterion(classification_output, y.long())
 
             # Accurately compute loss, because of different batch size
             loss_test += loss.item() / len(dataloader.dataset)
