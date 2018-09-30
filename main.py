@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import os
+import argparse
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -19,16 +21,26 @@ from capstone_project.models.classification_network import ClassificationNetwork
 from capstone_project.utils import train, test, accuracy, save_plot
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--project-dir', metavar='project_dir', dest='project_dir', help='path to project directory', required=False)
+parser.add_argument('--dataset', metavar='dataset', dest='dataset', help='name of dataset file in data directory', required=False)
+parser.add_argument('--batch-size', metavar='batch_size', dest='batch_size', help='batch size', required=False, default=16)
+parser.add_argument('--epochs', metavar='epochs', dest='epochs', help='number of epochs', required=False, default=50)
+parser.add_argument('--device', metavar='device', dest='device', help='device', required=False)
+parser.add_argument('--lr', metavar='lr', dest='lr', help='learning rate', required=False, default=0.01)
+args = parser.parse_args()
+
+
 # Globals
-PROJECT_DIR = '/home/mihir/Desktop/GitHub/nyu/capstone_project/'
+PROJECT_DIR = args.project_dir if args.project_dir else '/home/mihir/Desktop/GitHub/nyu/capstone_project/'
 DATA_DIR, PLOTS_DIR = 'data', 'plots'
-DATASET = 'mnist_test_seq.npy'
+DATASET = args.dataset if args.dataset else 'mnist_test_seq.npy'
 NUM_ROWS = 1
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
-BATCH_SIZE = 16     # input batch size for training
-N_EPOCHS = 1    # number of epochs to train
-LR = 0.01           # learning rate
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+BATCH_SIZE = args.batch_size     # input batch size for training
+N_EPOCHS = args.epochs    # number of epochs to train
+LR = args.lr           # learning rate
+DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
 NUM_FRAMES_IN_STACK = 1
 NUM_VIDEOS_PER_ROW = 1
 TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1)), list(range(11,20,1))]
@@ -67,9 +79,10 @@ def main():
         )
 
         test_loss, test_pred, test_true = test(
-            network=network,
-            criterion=criterion_test,
+            embedding_network=embedding_network,
+            classification_network=classification_network,
             dataloader=test_loader,
+            criterion=criterion_test,
             device=DEVICE
         )
 
