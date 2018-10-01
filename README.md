@@ -17,11 +17,12 @@ pip install -e .
 
 ## Usage
 ```
-usage: python main.py [--project-dir PROJECT_DIR] [--dataset DATASET]
+usage: main.py [-h] [--project-dir PROJECT_DIR] [--dataset DATASET]
                [--batch-size BATCH_SIZE] [--epochs EPOCHS]
                [--lr LR] [--device DEVICE]
 
 optional arguments:
+  -h, --help                      show this help message and exit
   --project-dir PROJECT_DIR       path to project directory
   --dataset DATASET               mnist_test_seq.py | cifar10.py, default=mnist_test_seq.py
                                   name of dataset file in 'data' directory
