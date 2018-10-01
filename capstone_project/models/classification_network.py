@@ -19,7 +19,6 @@ class ClassificationNetwork(nn.Module):
         output = self.fc1(input)
         output = self.relu(output)
         output = self.fc2(output)
-        output = self.relu(output)
         return output
 
     def _init_weights(self):

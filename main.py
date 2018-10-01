@@ -27,7 +27,7 @@ parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name o
 parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, default=16)
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, default=50)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
-parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, default=0.01)
+parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, default=1e-4)
 args = parser.parse_args()
 
 
@@ -64,7 +64,7 @@ def main():
     classification_network = ClassificationNetwork(out_dim, num_outputs, classification_hidden_size).to(DEVICE)
     criterion_train = nn.CrossEntropyLoss()
     criterion_test = nn.CrossEntropyLoss(reduction='sum')
-    optimizer = optim.SGD(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
+    optimizer = optim.Adam(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
 
     train_loss_history = []
     test_loss_history = []
@@ -90,12 +90,12 @@ def main():
             )
 
             accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
-            accuracy_test = accuracy(embedding_network, classification_network, test_loader, criterion_test, DEVICE)
+            # accuracy_test = accuracy(embedding_network, classification_network, test_loader, criterion_test, DEVICE)
             train_loss_history.append(train_loss)
-            test_loss_history.append(test_loss)
+            # test_loss_history.append(test_loss)
 
             print('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
-            print('TEST  Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, test_loss, accuracy_test))
+            # print('TEST  Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, test_loss, accuracy_test))
         except KeyboardInterrupt:
             print('Keyboard Interrupted!')
             break

@@ -81,7 +81,7 @@ class EmbeddingNetwork(nn.Module):
         output = output.view(output.size(0), -1)
         output = self.fc1(output)
         output = self.fc2(output)
-        output_n = torch.norm(output, p=2, dim=1, keepdim=True).detach()
+        output_n = torch.norm(output, p=2, dim=1, keepdim=True)
         output = output.div(output_n.expand_as(output))
         return output
 
