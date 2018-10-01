@@ -22,12 +22,12 @@ from capstone_project.utils import train, test, accuracy, save_plot
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--project-dir', metavar='project_dir', dest='project_dir', help='path to project directory', required=False)
-parser.add_argument('--dataset', metavar='dataset', dest='dataset', help='name of dataset file in data directory', required=False)
-parser.add_argument('--batch-size', metavar='batch_size', dest='batch_size', help='batch size', required=False, default=16)
-parser.add_argument('--epochs', metavar='epochs', dest='epochs', help='number of epochs', required=False, default=50)
-parser.add_argument('--device', metavar='device', dest='device', help='device', required=False)
-parser.add_argument('--lr', metavar='lr', dest='lr', help='learning rate', required=False, default=0.01)
+parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', help='path to project directory', required=False)
+parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
+parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, default=16)
+parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, default=50)
+parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
+parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, default=0.01)
 args = parser.parse_args()
 
 
