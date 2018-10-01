@@ -42,11 +42,13 @@ N_EPOCHS = args.epochs    # number of epochs to train
 LR = args.lr           # learning rate
 DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
 NUM_FRAMES_IN_STACK = 1
-NUM_VIDEOS_PER_ROW = 1
+NUM_PAIRS_PER_EXAMPLE = 1
 TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1)), list(range(11,20,1))]
 
 def main():
-    X, y = get_paired_data(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, NUM_ROWS, NUM_VIDEOS_PER_ROW, force=False)
+    # TODO: save model, make graphviz work
+
+    X, y = get_paired_data(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, NUM_ROWS, NUM_PAIRS_PER_EXAMPLE, force=False)
     train_loader, val_loader, test_loader = generate_dataloader(X, y, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR, PLOTS_DIR)
 
     if DATASET == 'mnist_test_seq.npy':

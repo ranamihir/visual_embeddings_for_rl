@@ -19,7 +19,14 @@ def load_data(project_dir, data_dir, filename):
     data = data.swapaxes(0,1)
     return data
 
+
+# This function returns a dict, with the time diff
+# as it's key and the class for it as it's value
 def get_time_buckets_dict(time_buckets):
+    '''
+    This function returns a dict, with the time diff
+    as it's key and the class for it as it's value
+    '''
     bucket_idx = 0
     buckets_dict = {}
     for bucket in time_buckets:
@@ -29,6 +36,11 @@ def get_time_buckets_dict(time_buckets):
     return buckets_dict
 
 def get_frame_differences_dict(num_total_frames):
+    '''
+    This function creates a dict with the key as the time difference between the frames
+    and the value as the list of tuples(start_frame,end_frame) containing all the pair of frames
+    with that diff in time.
+    '''
     # min_diff = 0, max_diff = num_total_frames-1
     # TODO: NUM_FRAMES_IN_STACK
     differences = range(num_total_frames)
@@ -39,15 +51,20 @@ def get_frame_differences_dict(num_total_frames):
                 break
             start_frame, end_frame = i, i+diff
             while end_frame < num_total_frames:
-                differences_dict.setdefault(diff, []).append((start_frame, end_frame))
+                differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
                 end_frame += 1
     return differences_dict
 
-def get_samples_at_difference(data, difference, differences_dict, num_videos_per_row, time_buckets_dict):
+def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, time_buckets_dict):
+    '''
+    The task of this function is to get the samples by first selecting the list of tuples
+    for the associated time difference, and then sampling the num of pairs per video example
+    and then finally returning, the video pairs and their associated class(for the time bucket)
+    '''
     video_pairs, y = [], []
     candidates = differences_dict[difference]
     np.random.seed(1337)
-    idx_pairs = np.random.choice(len(candidates), size=num_videos_per_row)
+    idx_pairs = np.random.choice(len(candidates), size=num_pairs_per_example)
     for row in data:
         for idx_pair in idx_pairs:
             target1, target2 = candidates[idx_pair]
@@ -56,7 +73,7 @@ def get_samples_at_difference(data, difference, differences_dict, num_videos_per
             y.append(bucket)
     return np.array(video_pairs), np.array(y)
 
-def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, num_rows=2, num_videos_per_row=1, force=False):
+def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, num_rows=2, num_pairs_per_example=1, force=False):
     mean, std = 0, 1
     data = load_data(project_dir, data_dir, filename)
     imshow(data, mean, std, project_dir, plots_dir)
@@ -74,7 +91,7 @@ def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, nu
     X, y = np.array([]), np.array([])
     for i in range(num_rows):
         for difference in range(num_total_frames):
-            video_pairs, targets = get_samples_at_difference(data, difference, differences_dict, num_videos_per_row, time_buckets_dict)
+            video_pairs, targets = get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, time_buckets_dict)
             X = video_pairs if not X.size else np.vstack((X, video_pairs))
             y = np.append(y, targets)
     pickle.dump(X, open(X_path, 'wb'))
@@ -82,6 +99,7 @@ def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, nu
     return X, y
 
 class MovingMNISTDataset(Dataset):
+    # TODO: write function for implementing transforms
     def __init__(self, X, y, transforms=None):
         self.X = X
         self.y = y
@@ -107,7 +125,7 @@ def generate_dataloader(X, y, test_size, val_size, batch_size, project_dir, plot
     # ])
 
     X, y = torch.from_numpy(X), torch.from_numpy(y)
-    dataset = dataset = MovingMNISTDataset(X, y, transforms=None)
+    dataset = MovingMNISTDataset(X, y, transforms=None)
 
     num_test = int(np.floor(test_size*len(dataset)))
     num_train_val = len(dataset) - num_test
