@@ -24,10 +24,10 @@ from capstone_project.utils import train, test, accuracy, save_plot
 parser = argparse.ArgumentParser()
 parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', help='path to project directory', required=False)
 parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
-parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, default=16)
-parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, default=50)
+parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, type=int, default=16)
+parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=50)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
-parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, default=1e-4)
+parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 args = parser.parse_args()
 
 
@@ -90,12 +90,12 @@ def main():
             )
 
             accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
-            # accuracy_test = accuracy(embedding_network, classification_network, test_loader, criterion_test, DEVICE)
+            accuracy_test = accuracy(embedding_network, classification_network, test_loader, criterion_test, DEVICE)
             train_loss_history.append(train_loss)
-            # test_loss_history.append(test_loss)
+            test_loss_history.append(test_loss)
 
             print('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
-            # print('TEST  Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, test_loss, accuracy_test))
+            print('TEST  Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, test_loss, accuracy_test))
         except KeyboardInterrupt:
             print('Keyboard Interrupted!')
             break

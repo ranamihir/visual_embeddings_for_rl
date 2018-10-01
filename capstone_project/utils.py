@@ -49,7 +49,6 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 
             output_ls.append(classification_output)
             y_ls.append(y)
-    optimizer.zero_grad()
     return loss_test, torch.cat(output_ls, dim=0), torch.cat(y_ls, dim=0)
 
 def accuracy(embedding_network, classification_network, dataloader, criterion, device):
