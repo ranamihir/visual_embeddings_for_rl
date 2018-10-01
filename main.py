@@ -109,20 +109,12 @@ def main():
     loss_history_df.plot(alpha=0.5, figsize=(10,8))
     save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
 
-    total_parameters_dict = dict(embedding_network.named_parameters())
-    total_parameters_dict.update(dict(classification_network.named_parameters()))
-    embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, 64, 64).to(DEVICE).float())
-    embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, 64, 64).to(DEVICE).float())
-    classification_input = torch.dot(embedding_output1, embedding_output2)
-    classification_output = classification_network(classification_input)
-    make_dot(classification_output, params=total_parameters_dict)
-
-    with torch.onnx.set_training(network, False):
+    with torch.onnx.set_training(embedding_network, False) and torch.onnx.set_training(classification_network, False):
         embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, 64, 64).to(DEVICE).float())
         embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, 64, 64).to(DEVICE).float())
-        classification_input = torch.dot(embedding_output1, embedding_output2)
-        trace, _ = torch.jit.get_trace_graph(classification_network, args=(classification_input,))
-    make_dot_from_trace(trace)
+        trace, _ = torch.jit.get_trace_graph(classification_network, args=(embedding_output1, embedding_output2,))
+        with open(os.path.join(PROJECT_DIR, PLOTS_DIR, 'model_DAG.svg'), 'w') as f:
+            f.write(make_dot_from_trace(trace)._repr_svg_())
 
 if __name__ == '__main__':
     main()
