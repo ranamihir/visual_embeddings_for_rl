@@ -10,12 +10,12 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
     classification_network.train()
     loss_train = 0.
     for batch_idx, (x1, x2, y) in enumerate(dataloader):
-        x1, x2, y = Variable(x1).to(device).float(), Variable(x2).to(device).float(), Variable(y).to(device)
+        x1, x2, y = Variable(x1).to(device).float(), Variable(x2).to(device).float(), Variable(y).to(device).long()
         optimizer.zero_grad()
         embedding_output1 = embedding_network(x1)
         embedding_output2 = embedding_network(x2)
         classification_output = classification_network(embedding_output1, embedding_output2)
-        loss = criterion(classification_output, y.long())
+        loss = criterion(classification_output, y)
         loss.backward()
         optimizer.step()
 
@@ -38,11 +38,11 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
     output_ls = []
     with torch.no_grad():
         for batch_idx, (x1, x2, y) in enumerate(dataloader):
-            x1, x2, y = Variable(x1).to(device), Variable(x2).to(device), Variable(y).to(device)
+            x1, x2, y = Variable(x1).to(device).float(), Variable(x2).to(device).float(), Variable(y).to(device).long()
             embedding_output1 = embedding_network(x1)
             embedding_output2 = embedding_network(x2)
             classification_output = classification_network(embedding_output1, embedding_output2)
-            loss = criterion(classification_output, y.long())
+            loss = criterion(classification_output, y)
 
             # Accurately compute loss, because of different batch size
             loss_test += loss.item() / len(dataloader.dataset)
