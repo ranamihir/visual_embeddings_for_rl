@@ -58,41 +58,45 @@ def main():
         embedding_hidden_size, classification_hidden_size = 1024, 1024
         num_outputs = 10
 
-    train_loss_history = []
-    test_loss_history = []
     embedding_network = EmbeddingNetwork(in_dim, in_channels, out_dim, embedding_hidden_size).to(DEVICE)
     classification_network = ClassificationNetwork(out_dim, num_outputs, classification_hidden_size).to(DEVICE)
-
     criterion_train = nn.CrossEntropyLoss()
     criterion_test = nn.CrossEntropyLoss(reduction='sum')
     optimizer = optim.SGD(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
 
+    train_loss_history = []
+    test_loss_history = []
+
     for epoch in range(1, N_EPOCHS+1):
-        train_loss = train(
-            embedding_network=embedding_network,
-            classification_network=classification_network,
-            criterion=criterion_train,
-            dataloader=train_loader,
-            optimizer=optimizer,
-            device=DEVICE,
-            epoch=epoch
-        )
+        try:
+            train_loss = train(
+                embedding_network=embedding_network,
+                classification_network=classification_network,
+                criterion=criterion_train,
+                dataloader=train_loader,
+                optimizer=optimizer,
+                device=DEVICE,
+                epoch=epoch
+            )
 
-        test_loss, test_pred, test_true = test(
-            embedding_network=embedding_network,
-            classification_network=classification_network,
-            dataloader=test_loader,
-            criterion=criterion_test,
-            device=DEVICE
-        )
+            test_loss, test_pred, test_true = test(
+                embedding_network=embedding_network,
+                classification_network=classification_network,
+                dataloader=test_loader,
+                criterion=criterion_test,
+                device=DEVICE
+            )
 
-        accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
-        accuracy_test = accuracy(embedding_network, classification_network, test_loader, criterion_test, DEVICE)
-        train_loss_history.append(train_loss)
-        test_loss_history.append(test_loss)
+            accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
+            accuracy_test = accuracy(embedding_network, classification_network, test_loader, criterion_test, DEVICE)
+            train_loss_history.append(train_loss)
+            test_loss_history.append(test_loss)
 
-        print('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
-        print('TEST  Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, test_loss, accuracy_test))
+            print('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
+            print('TEST  Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, test_loss, accuracy_test))
+        except KeyboardInterrupt:
+            print('Keyboard Interrupted!')
+            break
 
     loss_history_df = pd.DataFrame({
         'train': train_loss_history,
