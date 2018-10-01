@@ -29,5 +29,5 @@ optional arguments:
                                   input batch size, default=16
   --epochs EPOCHS                 number of epochs to train for, default=50
   --lr LR                         learning rate, default=0.01
-  --device                        cuda | cpu, default=gpu
+  --device                        cuda | cpu, default=cuda
                                   device to train on
