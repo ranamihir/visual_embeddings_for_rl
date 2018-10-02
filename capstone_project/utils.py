@@ -101,8 +101,8 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
                     val_loss_history, train_accuracy_history, val_accuracy_history, epoch, checkpoints_dir='checkpoints'):
     embedding_state = {'state_dict': embedding_network.state_dict()}
     classification_state = {'state_dict': classification_network.state_dict(), 'optimizer': optimizer.state_dict(), \
-        'epoch': epoch, 'train_loss_history': train_loss_history, 'train_loss_history': val_loss_history, \
-        'train_accuracy_history': train_accuracy_history, 'train_accuracy_history': val_accuracy_history}
+        'epoch': epoch, 'train_loss_history': train_loss_history, 'val_loss_history': val_loss_history, \
+        'train_accuracy_history': train_accuracy_history, 'val_accuracy_history': val_accuracy_history}
     torch.save(embedding_state, os.path.join(checkpoints_dir, \
         'embedding_network_{}.pkl'.format(epoch)))
     torch.save(classification_state, os.path.join(checkpoints_dir, \
