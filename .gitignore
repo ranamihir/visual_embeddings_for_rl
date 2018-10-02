@@ -1,8 +1,8 @@
-data/
+data
 pickle_objects/
 logs/
-plots/
-checkpoints/
+plots
+checkpoints
 
 sftp-config.json
 
