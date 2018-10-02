@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
+import pickle
 
 import torch
 import torch.nn as nn
@@ -51,7 +52,7 @@ if args.device_id and DEVICE == 'cuda':
     torch.cuda.set_device(args.device_id)
 
 NUM_PASSES_FOR_GENERATION = 1   # number of passes through data for pair generation
-NUM_FRAMES_IN_STACK = 2         # number of (total) frames to concatenate for each video
+NUM_FRAMES_IN_STACK = 4         # number of (total) frames to concatenate for each video
 NUM_PAIRS_PER_EXAMPLE = 1       # number of pairs to generate for given video and time difference
 TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1)), list(range(11,20-NUM_FRAMES_IN_STACK+1,1))]
 
@@ -85,6 +86,8 @@ def main():
 
     train_loss_history = []
     val_loss_history = []
+    accuracy_val_history = []
+    accuracy_train_history = []
     stop_epoch = N_EPOCHS
 
     # Uncomment this line to load model already dumped
@@ -115,6 +118,8 @@ def main():
             accuracy_val = accuracy(embedding_network, classification_network, val_loader, criterion_test, DEVICE)
             train_loss_history.append(train_loss)
             val_loss_history.append(val_loss)
+            accuracy_train_history.append(accuracy_train)
+            accuracy_val_history.append(accuracy_val)
 
             print('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
             print('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
@@ -134,6 +139,8 @@ def main():
     loss_history_df = pd.DataFrame({
         'train': train_loss_history,
         'test': val_loss_history,
+        'accuracy_train': accuracy_train,
+        'accuracy_val': accuracy_val
     })
     loss_history_df.plot(alpha=0.5, figsize=(10,8))
     save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')

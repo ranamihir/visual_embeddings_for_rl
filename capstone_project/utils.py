@@ -27,9 +27,9 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
         # Accurately compute loss, because of different batch size
         loss_train += loss.item() * len(x1) / len(dataloader.dataset)
 
-        if batch_idx % 100 == 0:
+        if batch_idx % (len(dataloader.dataset)//(5*y.shape[0])) == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(x1), len(dataloader.dataset),
+                epoch, batch_idx * y.shape[0], len(dataloader.dataset),
                 100. * batch_idx / len(dataloader), loss.item()))
 
     optimizer.zero_grad()
