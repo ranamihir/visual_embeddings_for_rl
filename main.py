@@ -59,7 +59,7 @@ def main():
     # Create directories for storing checkpoints and plots if not present
     make_dirs(PROJECT_DIR, [CHECKPOINTS_DIR, PLOTS_DIR])
 
-    # TODO: save model, make graphviz work
+    # TODO: make graphviz work
 
     X, y = get_paired_data(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, NUM_PASSES_FOR_GENERATION, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, force=args.force)
     train_loader, val_loader, test_loader = generate_dataloader(X, y, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR, PLOTS_DIR)
@@ -85,7 +85,11 @@ def main():
 
     train_loss_history = []
     val_loss_history = []
-    stop_epoch = None
+    stop_epoch = N_EPOCHS
+
+    # Uncomment this line to load model already dumped
+    # embedding_network, classification_network, optimizer, train_loss_history, val_loss_history = \
+        # load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, CHECKPOINTS_DIR)
 
     for epoch in range(1, N_EPOCHS+1):
         try:
@@ -122,7 +126,7 @@ def main():
 
     # Save the model checkpoint
     print('Dumping model and results... ', end='', flush=True)
-    save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, CHECKPOINTS_DIR, stop_epoch)
+    save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, stop_epoch, CHECKPOINTS_DIR)
     print('Done.')
 
     print('Saving loss history graph... ', end='', flush=True)
