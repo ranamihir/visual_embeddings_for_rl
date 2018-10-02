@@ -84,10 +84,8 @@ def main():
     criterion_test = nn.CrossEntropyLoss(reduction='sum')
     optimizer = optim.Adam(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
 
-    train_loss_history = []
-    val_loss_history = []
-    accuracy_val_history = []
-    accuracy_train_history = []
+    train_loss_history, train_accuracy_history = []
+    val_loss_history, val_accuracy_history = []
     stop_epoch = N_EPOCHS
 
     # Uncomment this line to load model already dumped
@@ -118,8 +116,8 @@ def main():
             accuracy_val = accuracy(embedding_network, classification_network, val_loader, criterion_test, DEVICE)
             train_loss_history.append(train_loss)
             val_loss_history.append(val_loss)
-            accuracy_train_history.append(accuracy_train)
-            accuracy_val_history.append(accuracy_val)
+            train_accuracy_history.append(accuracy_train)
+            val_accuracy_history.append(accuracy_val)
 
             print('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
             print('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
@@ -131,19 +129,26 @@ def main():
 
     # Save the model checkpoint
     print('Dumping model and results... ', end='', flush=True)
-    save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, stop_epoch, CHECKPOINTS_DIR)
+    save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
+        train_accuracy_history, val_accuracy_history, stop_epoch, CHECKPOINTS_DIR)
     print('Done.')
 
-    print('Saving loss history graph... ', end='', flush=True)
+    print('Saving and plotting loss and accuracy histories... ', end='', flush=True)
     fig = plt.figure()
     loss_history_df = pd.DataFrame({
         'train': train_loss_history,
         'test': val_loss_history,
-        'accuracy_train': accuracy_train,
-        'accuracy_val': accuracy_val
     })
     loss_history_df.plot(alpha=0.5, figsize=(10,8))
     save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
+
+    fig = plt.figure()
+    accuracy_history_df = pd.DataFrame({
+        'train': train_accuracy_history,
+        'test': val_accuracy_history,
+    })
+    accuracy_history_df.plot(alpha=0.5, figsize=(10,8))
+    save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_iterations.png')
     print('Done.')
 
     print('Generating and saving visualization of computational graph... ', end='', flush=True)

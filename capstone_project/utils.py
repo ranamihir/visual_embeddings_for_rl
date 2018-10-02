@@ -98,16 +98,20 @@ def make_dirs(project_dir, directories_to_create):
             os.makedirs(directory_path)
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
-                    val_loss_history, epoch, checkpoints_dir='checkpoints'):
+                    val_loss_history, train_accuracy_history, val_accuracy_history, epoch, checkpoints_dir='checkpoints'):
     embedding_state = {'state_dict': embedding_network.state_dict()}
     classification_state = {'state_dict': classification_network.state_dict(), 'optimizer': optimizer.state_dict(), \
-        'epoch': epoch, 'train_loss_history': train_loss_history, 'train_loss_history': val_loss_history}
+        'epoch': epoch, 'train_loss_history': train_loss_history, 'train_loss_history': val_loss_history \
+        'train_accuracy_history': train_accuracy_history, 'train_accuracy_history': val_accuracy_history}
     torch.save(embedding_state, os.path.join(checkpoints_dir, \
         'embedding_network_{}.pkl'.format(epoch)))
     torch.save(classification_state, os.path.join(checkpoints_dir, \
         'classification_network_{}.pkl'.format(epoch)))
 
 def load_checkpoint(embedding_network, classification_network, optimizer, device, epoch, checkpoints_dir='checkpoints'):
+    train_loss_history, val_loss_history = [], []
+    train_accuracy_history, val_accuracy_history = [], []
+
     # Note: Input model & optimizer should be pre-defined. This routine only updates their states.
     embedding_path = os.path.join(checkpoints_dir, 'embedding_network_{}.pkl'.format(epoch))
     classification_path = os.path.join(checkpoints_dir, 'classification_network_{}.pkl'.format(epoch))
@@ -121,6 +125,8 @@ def load_checkpoint(embedding_network, classification_network, optimizer, device
         optimizer.load_state_dict(classification_checkpoint['optimizer'])
         train_loss_history = classification_checkpoint['train_loss_history']
         val_loss_history = classification_checkpoint['val_loss_history']
+        train_accuracy_history = classification_checkpoint['train_accuracy_history']
+        val_accuracy_history = classification_checkpoint['val_accuracy_history']
 
         embedding_network = embedding_network.to(device)
         classification_network = classification_network.to(device)
@@ -130,7 +136,8 @@ def load_checkpoint(embedding_network, classification_network, optimizer, device
                     state[k] = v.to(device)
 
         print('Loaded checkpoint "{}".'.format(embedding_path, classification_path))
+
     else:
         print('No checkpoint found at "{}" and/or "{}"!'.format(embedding_path, classification_path))
 
-    return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history
+    return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, val_accuracy_history
