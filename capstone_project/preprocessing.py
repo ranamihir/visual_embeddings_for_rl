@@ -10,9 +10,11 @@ from torch.utils.data import DataLoader, random_split
 from capstone_project.utils import imshow
 
 def load_data(project_dir, data_dir, filename):
+    print('Loading "{}"... '.format(filename), end='', flush=True)
     filename = os.path.join(project_dir, data_dir, filename)
     data = np.load(filename)
     data = data.swapaxes(0,1)
+    print('Done.')
     return data
 
 # This function returns a dict, with the time diff
@@ -22,12 +24,14 @@ def get_time_buckets_dict(time_buckets):
     This function returns a dict, with the time diff
     as it's key and the class for it as it's value
     '''
+    print('Getting time buckets dictionary... ', end='', flush=True)
     bucket_idx = 0
     buckets_dict = {}
     for bucket in time_buckets:
         for time in bucket:
             buckets_dict[time] = bucket_idx
         bucket_idx += 1
+    print('Done.')
     return buckets_dict
 
 def get_frame_differences_dict(num_total_frames, num_frames_in_stack):
@@ -36,6 +40,7 @@ def get_frame_differences_dict(num_total_frames, num_frames_in_stack):
     and the value as the list of tuples(start_frame,end_frame) containing all the pair of frames
     with that diff in time.
     '''
+    print('Getting frame differences dictionary.... ', end='', flush=True)
     differences = range(num_total_frames-num_frames_in_stack+1)
     differences_dict = {}
     for diff in differences:
@@ -46,6 +51,7 @@ def get_frame_differences_dict(num_total_frames, num_frames_in_stack):
             while last_end_frame < num_total_frames:
                 differences_dict.setdefault(diff, []).append(tuple((last_start_frame, last_end_frame)))
                 last_end_frame += 1
+    print('Done.')
     return differences_dict
 
 def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, num_frames_in_stack, time_buckets_dict):
@@ -54,6 +60,7 @@ def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_
     for the associated time difference, and then sampling the num of pairs per video example
     and then finally returning, the video pairs and their associated class(for the time bucket)
     '''
+    print('Getting all pairs with a frame difference of {}... '.format(difference), end='', flush=True)
     video_pairs, y = [], []
     candidates = differences_dict[difference]
     np.random.seed(1337)
@@ -66,6 +73,7 @@ def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_
             video_pairs.append([row[target1_frames], row[target2_frames]])
             bucket = time_buckets_dict[difference]
             y.append(bucket)
+    print('Done.')
     return np.array(video_pairs), np.array(y)
 
 def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, num_passes_for_generation=2, num_pairs_per_example=1, num_frames_in_stack=2, force=False):
@@ -77,20 +85,27 @@ def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, nu
     y_path = os.path.join(project_dir, data_dir, 'y.pkl')
     if not force and os.path.exists(X_path) and os.path.exists(y_path):
         data = None
+        print('Found existing data. Loading it... ', end='', flush=True)
         X = pickle.load(open(X_path, 'rb'))
         y = pickle.load(open(y_path, 'rb'))
+        print('Done.')
         return X, y
+    print('Did not find existing data. Creating it... ')
     num_total_frames = data.shape[1]
     time_buckets_dict = get_time_buckets_dict(time_buckets)
     differences_dict = get_frame_differences_dict(num_total_frames, num_frames_in_stack)
     X, y = np.array([]), np.array([])
     for i in range(num_passes_for_generation):
+        print('Making pass {} through data... '.format(i+1))
         for difference in range(num_total_frames-num_frames_in_stack+1):
             video_pairs, targets = get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, num_frames_in_stack, time_buckets_dict)
             X = video_pairs if not X.size else np.vstack((X, video_pairs))
             y = np.append(y, targets)
+        print('Done.')
+    print('Data generation done. Dumping data to disk... ', end='', flush=True)
     pickle.dump(X, open(X_path, 'wb'))
     pickle.dump(y, open(y_path, 'wb'))
+    print('Done.')
     return X, y
 
 class MovingMNISTDataset(Dataset):
@@ -111,6 +126,7 @@ class MovingMNISTDataset(Dataset):
         return len(self.y)
 
 def generate_dataloader(X, y, test_size, val_size, batch_size, project_dir, plots_dir):
+    # TODO: Normalize data
     # mean = np.mean(dataset)
     # std = np.std(dataset)
     # dataset = (dataset - mean)/std
@@ -118,6 +134,7 @@ def generate_dataloader(X, y, test_size, val_size, batch_size, project_dir, plot
     #     transforms.ToTensor(),
     #     transforms.Normalize((mean,), (std,))
     # ])
+    print('Generating train, val, and test data loaders... ', end='', flush=True)
 
     X, y = torch.from_numpy(X), torch.from_numpy(y)
     dataset = MovingMNISTDataset(X, y, transforms=None)
@@ -129,8 +146,10 @@ def generate_dataloader(X, y, test_size, val_size, batch_size, project_dir, plot
 
     train_dataset, val_dataset, test_dataset = random_split(dataset, [num_train, num_val, num_test])
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
-    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+
+    print('Done.')
 
     return train_loader, val_loader, test_loader
