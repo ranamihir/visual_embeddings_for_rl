@@ -2,6 +2,9 @@ data/
 pickle_objects/
 logs/
 plots/
+checkpoints/
+
+sftp-config.json
 
 # MAC OS stuff
 .DS_Store
