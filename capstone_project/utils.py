@@ -98,28 +98,24 @@ def make_dirs(project_dir, directories_to_create):
             os.makedirs(directory_path)
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
-                    val_loss_history, checkpoints_dir='checkpoints', epoch=None):
+                    val_loss_history, epoch, checkpoints_dir='checkpoints'):
     embedding_state = {'state_dict': embedding_network.state_dict()}
     classification_state = {'state_dict': classification_network.state_dict(), 'optimizer': optimizer.state_dict(), \
-        'train_losslogger': train_loss_history, 'val_losslogger': val_loss_history}
-    if epoch:
-        classification_state['epoch'] = epoch
+        'epoch': epoch, 'train_loss_history': train_loss_history, 'train_loss_history': val_loss_history}
     torch.save(embedding_state, os.path.join(checkpoints_dir, \
-        'embedding_network{}.pkl'.format('_{}'.format(epoch) if epoch else '')))
+        'embedding_network_{}.pkl'.format(epoch)))
     torch.save(classification_state, os.path.join(checkpoints_dir, \
-        'classification_network{}.pkl'.format('_{}'.format(epoch) if epoch else '')))
+        'classification_network_{}.pkl'.format(epoch)))
 
-def load_checkpoint(embedding_network, classification_network, optimizer, device, checkpoints_dir='checkpoints', \
-        embedding_filename='embedding_network.pkl', classification_filename='classification_network.pkl'):
+def load_checkpoint(embedding_network, classification_network, optimizer, device, epoch, checkpoints_dir='checkpoints'):
     # Note: Input model & optimizer should be pre-defined. This routine only updates their states.
-    epoch = 0
-    embedding_path = os.path.join(checkpoints_dir, embedding_filename)
-    classification_path = os.path.join(checkpoints_dir, classification_filename)
+    embedding_path = os.path.join(checkpoints_dir, 'embedding_network_{}.pkl'.format(epoch))
+    classification_path = os.path.join(checkpoints_dir, 'classification_network_{}.pkl'.format(epoch))
     if os.path.isfile(embedding_path) and os.path.isfile(classification_path):
-        print('Loading checkpoint "{}" and "{}"...'.format(embedding_path, classification_path))
+        print('Loading checkpoint "{}" and "{}"...'.format(embedding_path, classification_path), end='', flush=True)
         embedding_checkpoint = torch.load(embedding_path)
         classification_checkpoint = torch.load(classification_path)
-        epoch = classification_checkpoint['epoch']
+        assert epoch == classification_checkpoint['epoch']
         embedding_network.load_state_dict(embedding_checkpoint['state_dict'])
         classification_network.load_state_dict(classification_checkpoint['state_dict'])
         optimizer.load_state_dict(classification_checkpoint['optimizer'])
@@ -133,7 +129,7 @@ def load_checkpoint(embedding_network, classification_network, optimizer, device
                 if isinstance(v, torch.Tensor):
                     state[k] = v.to(device)
 
-        print('Loaded checkpoint "{}" (epoch {}).'.format(embedding_path, classification_path, epoch))
+        print('Loaded checkpoint "{}".'.format(embedding_path, classification_path))
     else:
         print('No checkpoint found at "{}" and/or "{}"!'.format(embedding_path, classification_path))
 
