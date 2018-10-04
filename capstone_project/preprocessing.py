@@ -103,8 +103,8 @@ def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, nu
             y = np.append(y, targets)
         print('Done.')
     print('Data generation done. Dumping data to disk... ', end='', flush=True)
-    pickle.dump(X, open(X_path, 'wb'))
-    pickle.dump(y, open(y_path, 'wb'))
+    pickle.dump(X, open(X_path, 'wb'),protocol=4)
+    pickle.dump(y, open(y_path, 'wb'),protocol=4)
     print('Done.')
     return X, y
 
