@@ -54,7 +54,7 @@ if args.device_id and DEVICE == 'cuda':
 NUM_PASSES_FOR_GENERATION = 1   # number of passes through data for pair generation
 NUM_FRAMES_IN_STACK = 2         # number of (total) frames to concatenate for each video
 NUM_PAIRS_PER_EXAMPLE = 5       # number of pairs to generate for given video and time difference
-TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1)), list(range(11,20-NUM_FRAMES_IN_STACK+1,1))]
+TIME_BUCKETS = [[0], [1], [2], [3,4], list(range(5,11,1))]
 
 def main():
     # Create directories for storing checkpoints and plots if not present

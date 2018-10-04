@@ -9,6 +9,7 @@ class ClassificationNetwork(nn.Module):
         self.fc1 = nn.Linear(num_inputs, hidden_size)
         self.fc2 = nn.Linear(hidden_size, num_outputs)
         self.relu = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout(p=0.5)
 
         # Initialize weights
         self._init_weights()
@@ -18,6 +19,7 @@ class ClassificationNetwork(nn.Module):
         input = input.view(input.size(0), -1) # Reshape input to batch_size x num_inputs
         output = self.fc1(input)
         output = self.relu(output)
+        output = self.dropout(output)
         output = self.fc2(output)
         return output
 
