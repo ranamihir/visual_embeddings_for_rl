@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-
+# try using dropout in the hidden layer
 class ClassificationNetwork(nn.Module):
     def __init__(self, num_inputs, num_outputs=6, hidden_size=1024):
         super(ClassificationNetwork, self).__init__()
@@ -9,7 +9,7 @@ class ClassificationNetwork(nn.Module):
         self.fc1 = nn.Linear(num_inputs, hidden_size)
         self.fc2 = nn.Linear(hidden_size, num_outputs)
         self.relu = nn.ReLU(inplace=True)
-
+        self.dropout = nn.Dropout(p=0.5)
         # Initialize weights
         self._init_weights()
 
@@ -18,6 +18,7 @@ class ClassificationNetwork(nn.Module):
         input = input.view(input.size(0), -1) # Reshape input to batch_size x num_inputs
         output = self.fc1(input)
         output = self.relu(output)
+        output = self.dropout(output)
         output = self.fc2(output)
         return output
 

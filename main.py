@@ -84,8 +84,8 @@ def main():
     criterion_test = nn.CrossEntropyLoss(reduction='sum')
     optimizer = optim.Adam(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
 
-    train_loss_history, train_accuracy_history = [],[]
-    val_loss_history, val_accuracy_history = [],[]
+    train_loss_history, train_accuracy_history = [], []
+    val_loss_history, val_accuracy_history = [], []
     stop_epoch = N_EPOCHS
 
     # Uncomment this line to load model already dumped

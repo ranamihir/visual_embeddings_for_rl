@@ -31,7 +31,7 @@ class ResidualBlock(nn.Module):
         output = self.relu(output)
         return output
 
-
+#try strided convs instead of maxpool
 class EmbeddingNetwork(nn.Module):
     def __init__(self, in_dim, in_channels, out_dim, hidden_size=1024, block=ResidualBlock, num_blocks=3):
         super(EmbeddingNetwork, self).__init__()
@@ -39,11 +39,11 @@ class EmbeddingNetwork(nn.Module):
         self.in_channels = in_channels
 
         # Conv-ReLU layers with batch-norm and downsampling
-        self.conv1 = conv3x3(in_channels, 32)
+        self.conv1 = conv3x3(in_channels, 32,stride=2)
         self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = conv3x3(32, 64)
+        self.conv2 = conv3x3(32, 64,stride = 2)
         self.bn2 = nn.BatchNorm2d(64)
-        self.conv3 = conv3x3(64, 64)
+        self.conv3 = conv3x3(64, 64,stride = 2)
         self.bn3 = nn.BatchNorm2d(64)
         self.pool = nn.MaxPool2d(2)
         self.relu = nn.ReLU(inplace=True)
@@ -52,7 +52,7 @@ class EmbeddingNetwork(nn.Module):
         self.residual_layers = self._make_layer(block, 64, 64, num_blocks)
 
         # Fully connected layers
-        self.fc1 = nn.Linear(64*16*16, hidden_size)
+        self.fc1 = nn.Linear(64*12*12, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_dim)
 
         # Initialize weights
