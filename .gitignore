@@ -5,6 +5,7 @@ plots
 checkpoints
 
 sftp-config.json
+sftp-config-alt.json
 
 # MAC OS stuff
 .DS_Store
