@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import argparse
 import pickle
+# TODO: Setup logging
 
 import torch
 import torch.nn as nn
@@ -33,6 +34,7 @@ parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--force', action='store_true', help='overwrites all existing data')
+# TODO: load-ckpt
 args = parser.parse_args()
 
 
@@ -46,6 +48,7 @@ BATCH_SIZE = args.batch_size    # input batch size for training
 N_EPOCHS = args.epochs          # number of epochs to train
 LR = args.lr                    # learning rate
 NGPU = args.ngpu                # number of GPUs
+# TODO: Incorporate NGPUs
 DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if args.device_id and DEVICE == 'cuda':
@@ -71,8 +74,8 @@ def main():
     num_outputs = 6
 
     print('Creating models... ', end='', flush=True)
-    embedding_network = EmbeddingNetwork(in_dim, in_channels, out_dim, embedding_hidden_size).to(DEVICE)
-    classification_network = ClassificationNetwork(out_dim, num_outputs, classification_hidden_size).to(DEVICE)
+    embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim).to(DEVICE)
+    classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs).to(DEVICE)
     print('Done.')
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")

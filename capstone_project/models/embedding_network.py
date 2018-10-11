@@ -33,7 +33,7 @@ class ResidualBlock(nn.Module):
 
 
 class EmbeddingNetwork(nn.Module):
-    def __init__(self, in_dim, in_channels, out_dim, hidden_size=1024, block=ResidualBlock, num_blocks=3):
+    def __init__(self, in_dim, in_channels, hidden_size, out_dim, block=ResidualBlock, num_blocks=3):
         super(EmbeddingNetwork, self).__init__()
         self.in_dim = in_dim
         self.in_channels = in_channels

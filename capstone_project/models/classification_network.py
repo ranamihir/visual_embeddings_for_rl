@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class ClassificationNetwork(nn.Module):
-    def __init__(self, num_inputs, num_outputs=6, hidden_size=1024):
+    def __init__(self, num_inputs, hidden_size, num_outputs):
         super(ClassificationNetwork, self).__init__()
         # Fully connected and ReLU layers
         self.fc1 = nn.Linear(num_inputs, hidden_size)

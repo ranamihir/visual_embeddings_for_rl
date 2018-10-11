@@ -71,11 +71,11 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
 def imshow(data, mean, std, project_dir, plots_dir):
     print('Plotting sample data and saving to "data_sample.png"... ', end='', flush=True)
     image_dim = data.shape[-1]
-    np.random.seed(1337)
+    np.random.seed(0)
     images = data[np.random.choice(len(data), size=1)]
     images = torch.from_numpy(images)
 
-    images = make_grid(images[0].reshape(-1, 1, image_dim, image_dim), nrow=10, padding=5, pad_value=1)
+    images = make_grid(images[0].reshape(-1, 1, image_dim, image_dim), nrow=5, padding=5, pad_value=1)
     images = images*std + mean  # unnormalize
     np_image = images.numpy()
 
