@@ -26,7 +26,7 @@ from capstone_project.utils import train, test, accuracy, save_plot, make_dirs, 
 parser = argparse.ArgumentParser()
 parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', help='path to project directory', required=False)
 parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
-parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from 'data')', \
+parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
                     required=False, default='data')
 parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, type=int, default=64)
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=10)
@@ -40,7 +40,7 @@ args = parser.parse_args()
 
 
 # Globals
-PROJECT_DIR = args.project_dir if args.project_dir else '/home/mihir/Desktop/GitHub/nyu/capstone_project/'
+PROJECT_DIR = args.project_dir if args.project_dir else '/home/mihir/Desktop/GitHub/nyu/learning_visual_embeddings/'
 DATA_DIR, CHECKPOINTS_DIR, PLOTS_DIR = args.data_dir, 'checkpoints', 'plots'
 DATASET = args.dataset if args.dataset else 'mnist_test_seq.npy'
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
