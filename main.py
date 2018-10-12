@@ -32,7 +32,7 @@ parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', hel
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=10)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
 parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='device id of gpu', required=False, type=int)
-parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
+parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int, default=1)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 # TODO: load-ckpt
@@ -72,7 +72,7 @@ def main():
     # Network hyperparameters
     in_dim, in_channels, out_dim = X.shape[-1], NUM_FRAMES_IN_STACK, 1024
     embedding_hidden_size, classification_hidden_size = 1024, 1024
-    num_outputs = 6
+    num_outputs = len(TIME_BUCKETS)
 
     print('Creating models... ', end='', flush=True)
     embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim).to(DEVICE)
@@ -143,7 +143,7 @@ def main():
         'train': train_loss_history,
         'test': val_loss_history,
     })
-    loss_history_df.plot(alpha=0.5, figsize=(10,8))
+    loss_history_df.plot(alpha=0.5, figsize=(10, 8))
     save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
 
     fig = plt.figure()
@@ -151,7 +151,7 @@ def main():
         'train': train_accuracy_history,
         'test': val_accuracy_history,
     })
-    accuracy_history_df.plot(alpha=0.5, figsize=(10,8))
+    accuracy_history_df.plot(alpha=0.5, figsize=(10, 8))
     save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_iterations.png')
     print('Done.')
 
