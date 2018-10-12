@@ -34,24 +34,22 @@ def get_time_buckets_dict(time_buckets):
     print('Done.')
     return buckets_dict
 
-def get_frame_differences_dict(max_frame, num_frames_in_stack):
+def get_frame_differences_dict(num_total_frames, max_frame_diff, num_frames_in_stack):
     '''
     Returns a dict with the key as the time difference between the frames
     and the value as a list of tuples (start_frame, end_frame) containing
     all the pair of frames with that diff in time
     '''
     print('Getting frame differences dictionary... ', end='', flush=True)
-    differences = range(max_frame-num_frames_in_stack)
     differences_dict = {}
+    differences = range(max_frame_diff+1)
     for diff in differences:
-        i = num_frames_in_stack-1
-        if i+diff > max_frame:
-            break
-        last_start_frame, last_end_frame = i, i+diff
-        while last_end_frame <= max_frame:
-            differences_dict.setdefault(diff, []).append(tuple((last_start_frame, last_end_frame)))
-            last_start_frame += 1
-            last_end_frame += 1
+        start_frame = num_frames_in_stack-1
+        end_frame = start_frame+diff
+        while end_frame <= num_total_frames-1:
+            differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
+            start_frame += 1
+            end_frame += 1
     print('Done.')
     return differences_dict
 
@@ -82,6 +80,12 @@ def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, nu
     data = load_data(project_dir, data_dir, filename)
     imshow(data, mean, std, project_dir, plots_dir)
 
+    num_total_frames = data.shape[1]
+    max_frame_diff = np.hstack([bucket for bucket in time_buckets]).max()
+    assert max_frame_diff <= num_total_frames-num_frames_in_stack, \
+        'Cannot have difference of {} when sequence length is {} and number of \
+        stacked frames are {}'.format(max_frame_diff, num_total_frames, num_frames_in_stack)
+
     filename = '.'.join(filename.split('.')[:-1])
     X_path = os.path.join(project_dir, data_dir, '{}_X.pkl'.format(filename))
     y_path = os.path.join(project_dir, data_dir, '{}_y.pkl'.format(filename))
@@ -94,12 +98,11 @@ def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, nu
         return X, y
     print('Did not find existing data. Creating it... ')
     time_buckets_dict = get_time_buckets_dict(time_buckets)
-    max_frame = np.hstack([bucket for bucket in time_buckets]).max()
-    differences_dict = get_frame_differences_dict(max_frame, num_frames_in_stack)
+    differences_dict = get_frame_differences_dict(num_total_frames, max_frame_diff, num_frames_in_stack)
     X, y = np.array([]), np.array([])
     for i in range(num_passes_for_generation):
         print('Making pass {} through data... '.format(i+1))
-        for difference in range(max_frame-num_frames_in_stack):
+        for difference in range(max_frame_diff+1):
             video_pairs, targets = get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, num_frames_in_stack, time_buckets_dict)
             X = np.vstack((X, video_pairs)) if X.size else video_pairs
             y = np.append(y, targets)
