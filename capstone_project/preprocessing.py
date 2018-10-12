@@ -41,7 +41,6 @@ def get_frame_differences_dict(num_total_frames, max_frame_diff, num_frames_in_s
     all the pair of frames with that diff in time
     '''
     logging.info('Getting frame differences dictionary...')
-    differences = range(max_frame_diff-num_frames_in_stack)
     differences_dict = {}
     differences = range(max_frame_diff+1)
     for diff in differences:
