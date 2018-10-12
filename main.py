@@ -70,7 +70,7 @@ def main():
     train_loader, val_loader, test_loader = generate_dataloader(X, y, TEST_SIZE, VAL_SIZE, BATCH_SIZE, PROJECT_DIR, PLOTS_DIR)
 
     # Network hyperparameters
-    in_dim, in_channels, out_dim = 64, NUM_FRAMES_IN_STACK, 1024
+    in_dim, in_channels, out_dim = X.shape[-1], NUM_FRAMES_IN_STACK, 1024
     embedding_hidden_size, classification_hidden_size = 1024, 1024
     num_outputs = 6
 
@@ -157,8 +157,8 @@ def main():
 
     print('Generating and saving visualization of computational graph... ', end='', flush=True)
     with torch.onnx.set_training(embedding_network, False) and torch.onnx.set_training(classification_network, False):
-        embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, 64, 64).to(DEVICE).float())
-        embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, 64, 64).to(DEVICE).float())
+        embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, in_dim, in_dim).to(DEVICE).float())
+        embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, in_dim, in_dim).to(DEVICE).float())
         trace, _ = torch.jit.get_trace_graph(classification_network, args=(embedding_output1, embedding_output2,))
         with open(os.path.join(PROJECT_DIR, PLOTS_DIR, 'model_DAG.svg'), 'w') as f:
             f.write(make_dot_from_trace(trace)._repr_svg_())

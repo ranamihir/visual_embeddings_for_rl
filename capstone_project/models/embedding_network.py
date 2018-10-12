@@ -39,7 +39,7 @@ class EmbeddingNetwork(nn.Module):
         self.in_channels = in_channels
 
         # Conv-ReLU layers with batch-norm and downsampling
-        self.conv1 = conv3x3(in_channels, 32,stride=2)
+        self.conv1 = conv3x3(in_channels, 32, stride=2)
         self.bn1 = nn.BatchNorm2d(32)
         self.conv2 = conv3x3(32, 64,stride=2)
         self.bn2 = nn.BatchNorm2d(64)

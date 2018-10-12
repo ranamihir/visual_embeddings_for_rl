@@ -81,8 +81,9 @@ def get_paired_data(project_dir, data_dir, plots_dir, filename, time_buckets, nu
     data = load_data(project_dir, data_dir, filename)
     imshow(data, mean, std, project_dir, plots_dir)
 
-    X_path = os.path.join(project_dir, data_dir, 'X.pkl')
-    y_path = os.path.join(project_dir, data_dir, 'y.pkl')
+    filename = '.'.join(filename.split('.')[:-1])
+    X_path = os.path.join(project_dir, data_dir, '{}_X.pkl'.format(filename))
+    y_path = os.path.join(project_dir, data_dir, '{}_y.pkl'.format(filename))
     if not force and os.path.exists(X_path) and os.path.exists(y_path):
         data = None
         print('Found existing data. Loading it... ', end='', flush=True)
