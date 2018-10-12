@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
 import os
+import logging
+import time
+import sys
+import pickle
+
 import torch
 from torch.autograd import Variable
 from torchvision.utils import make_grid
@@ -28,7 +33,7 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
         loss_train += loss.item() * len(x1) / len(dataloader.dataset)
 
         if batch_idx % (len(dataloader.dataset)//(5*y.shape[0])) == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * y.shape[0], len(dataloader.dataset),
                 100. * batch_idx / len(dataloader), loss.item()))
 
@@ -69,7 +74,7 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
     return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
 
 def imshow(data, mean, std, project_dir, plots_dir):
-    print('Plotting sample data and saving to "data_sample.png"... ', end='', flush=True)
+    logging.info('Plotting sample data and saving to "data_sample.png"... ')
     image_dim = data.shape[-1]
     np.random.seed(0)
     images = data[np.random.choice(len(data), size=1)]
@@ -83,7 +88,7 @@ def imshow(data, mean, std, project_dir, plots_dir):
     plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
     plt.tight_layout()
     save_plot(project_dir, plots_dir, fig, 'data_sample.png')
-    print('Done.')
+    logging.info('Done.')
 
 def save_plot(project_dir, plots_dir, fig, filename):
     plot_path = os.path.join(project_dir, plots_dir)
@@ -96,6 +101,42 @@ def make_dirs(project_dir, directories_to_create):
         directory_path = os.path.join(project_dir, directory)
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
+
+def setup_logging(project_dir,logging_dir):
+    log_path = os.path.join(project_dir,logging_dir)
+    filename = time.strftime('%Y_%m_%d') + '.log'
+    log_handlers = [logging.FileHandler(os.path.join(log_path,filename)),logging.StreamHandler()]
+    logging.basicConfig(format='%(asctime)s: %(message)s',datefmt='%Y/%m/%d %I:%M:%S %p', handlers = log_handlers,level=logging.DEBUG)
+    logging.info('\n\n\n')
+
+def save_object(obj, filepath):
+    """
+    This is a defensive way to write pickle.write, allowing for very large files on all platforms
+    """
+    max_bytes = 2**31 - 1
+    bytes_out = pickle.dumps(obj,protocol=4)
+    n_bytes = sys.getsizeof(bytes_out)
+    with open(filepath, 'wb') as f_out:
+        for idx in range(0, n_bytes, max_bytes):
+            f_out.write(bytes_out[idx:idx+max_bytes])
+
+
+def load_object(filepath):
+    """
+    This is a defensive way to write pickle.load, allowing for very large files on all platforms
+    """
+    max_bytes = 2**31 - 1
+    try:
+        input_size = os.path.getsize(filepath)
+        bytes_in = bytearray(0)
+        with open(filepath, 'rb') as f_in:
+            for _ in range(0, input_size, max_bytes):
+                bytes_in += f_in.read(max_bytes)
+        obj = pickle.loads(bytes_in)
+    except:
+        return None
+    return obj
+
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
                     val_loss_history, train_accuracy_history, val_accuracy_history, epoch, checkpoints_dir='checkpoints'):
@@ -116,7 +157,7 @@ def load_checkpoint(embedding_network, classification_network, optimizer, device
     embedding_path = os.path.join(checkpoints_dir, 'embedding_network_{}.pkl'.format(epoch))
     classification_path = os.path.join(checkpoints_dir, 'classification_network_{}.pkl'.format(epoch))
     if os.path.isfile(embedding_path) and os.path.isfile(classification_path):
-        print('Loading checkpoint "{}" and "{}"...'.format(embedding_path, classification_path), end='', flush=True)
+        logging.info('Loading checkpoint "{}" and "{}"...'.format(embedding_path, classification_path))
         embedding_checkpoint = torch.load(embedding_path)
         classification_checkpoint = torch.load(classification_path)
         assert epoch == classification_checkpoint['epoch']
@@ -135,9 +176,9 @@ def load_checkpoint(embedding_network, classification_network, optimizer, device
                 if isinstance(v, torch.Tensor):
                     state[k] = v.to(device)
 
-        print('Loaded checkpoint "{}".'.format(embedding_path, classification_path))
+        logging.info('Loaded checkpoint "{}".'.format(embedding_path, classification_path))
 
     else:
-        print('No checkpoint found at "{}" and/or "{}"!'.format(embedding_path, classification_path))
+        logging.info('No checkpoint found at "{}" and/or "{}"!'.format(embedding_path, classification_path))
 
     return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, val_accuracy_history
