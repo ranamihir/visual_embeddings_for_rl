@@ -51,8 +51,28 @@ class EmbeddingNetwork(nn.Module):
         # Residual layers
         self.residual_layers = self._make_layer(block, 64, 64, num_blocks)
 
+        #Getting the dimension of fc layer by using a dummy variable
+        self.layers = nn.Sequential(
+                            conv3x3(in_channels, 32, stride=2),
+                            nn.BatchNorm2d(32),
+                            nn.ReLU(inplace=True),
+                            conv3x3(32, 64, stride=2),
+                            nn.BatchNorm2d(64),
+                            nn.ReLU(inplace=True),
+                            conv3x3(64, 64, stride=2),
+                            nn.BatchNorm2d(64),
+                            nn.ReLU(inplace=True),
+                            self._make_layer(block, 64, 64, num_blocks)
+                    )
+
+        dummy_var = torch.zeros([1,self.in_channels,self.in_dim,self.in_dim]).float()
+        output_dummy_var = self.layers(dummy_var)
+        fc1_size = 1
+        for i in range(1,4):
+            fc1_size*=output_dummy_var.shape[i]
+        
         # Fully connected layers
-        self.fc1 = nn.Linear(64*16*16, hidden_size)
+        self.fc1 = nn.Linear(fc1_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_dim)
 
         # Initialize weights
