@@ -91,10 +91,7 @@ def imshow(data, mean, std, project_dir, plots_dir):
     logging.info('Done.')
 
 def save_plot(project_dir, plots_dir, fig, filename):
-    plot_path = os.path.join(project_dir, plots_dir)
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
-    fig.savefig(os.path.join(plot_path, filename))
+    fig.savefig(os.path.join(project_dir, plots_dir, filename))
 
 def make_dirs(project_dir, directories_to_create):
     for directory in directories_to_create:

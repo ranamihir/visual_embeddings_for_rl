@@ -16,7 +16,7 @@ parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name o
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
                     required=False, default='data')
 parser.add_argument('--img-dim', metavar='IMG_DIM', dest='img_dim', help='height (or width) of output video', required=False, \
-                    type=int, default=64)
+                    type=int, default=121)
 parser.add_argument('--seq-len', metavar='SEQ_LEN', dest='seq_len', help='sequence length of output video', required=False, \
                     type=int, default=20)
 args = parser.parse_args()
