@@ -36,12 +36,14 @@ parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs 
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 # TODO: load-ckpt
+parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', help='path to checkpoints directory', required=False)
 args = parser.parse_args()
 
 
 # Globals
 PROJECT_DIR = args.project_dir if args.project_dir else '/home/mihir/Desktop/GitHub/nyu/learning_visual_embeddings/'
-DATA_DIR, CHECKPOINTS_DIR, PLOTS_DIR, LOGGING_DIR = args.data_dir, 'checkpoints', 'plots', 'logs'
+DATA_DIR,  PLOTS_DIR, LOGGING_DIR = args.data_dir, 'plots', 'logs'
+CHECKPOINTS_DIR = args.checkpoints_dir if args.checkpoints_dir else 'checkpoints'
 DATASET = args.dataset if args.dataset else 'mnist_test_seq.npy'
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
 
