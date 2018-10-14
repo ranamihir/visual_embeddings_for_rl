@@ -5,6 +5,7 @@ import logging
 import time
 import sys
 import pickle
+from pprint import pformat
 
 import torch
 from torch.autograd import Variable
@@ -89,6 +90,10 @@ def imshow(data, mean, std, project_dir, plots_dir):
     plt.tight_layout()
     save_plot(project_dir, plots_dir, fig, 'data_sample.png')
     logging.info('Done.')
+
+def print_config(vars_dict):
+    vars_dict = {key: value for key, value in vars_dict.items() if key == key.upper()}
+    logging.info(pformat(vars_dict))
 
 def save_plot(project_dir, plots_dir, fig, filename):
     fig.savefig(os.path.join(project_dir, plots_dir, filename))

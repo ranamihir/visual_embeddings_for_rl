@@ -53,9 +53,9 @@ LR = args.lr                    # learning rate
 NGPU = args.ngpu                # number of GPUs
 # TODO: Incorporate NGPUs
 DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if args.device_id and DEVICE == 'cuda':
-    torch.cuda.set_device(args.device_id)
+    DEVICE_ID = args.device_id
+    torch.cuda.set_device(DEVICE_ID)
 
 NUM_PASSES_FOR_GENERATION = 1   # number of passes through data for pair generation
 NUM_FRAMES_IN_STACK = 2         # number of (total) frames to concatenate for each video
@@ -63,9 +63,9 @@ NUM_PAIRS_PER_EXAMPLE = 5       # number of pairs to generate for given video an
 TIME_BUCKETS = [[0], [1], [2], [3,4], range(5,11,1)]
 
 def main():
-    # Create directories for storing checkpoints and plots if not present
-    make_dirs(PROJECT_DIR, [CHECKPOINTS_DIR, PLOTS_DIR, LOGGING_DIR])
-    setup_logging(PROJECT_DIR, LOGGING_DIR)
+    make_dirs(PROJECT_DIR, [CHECKPOINTS_DIR, PLOTS_DIR, LOGGING_DIR]) # Create all required directories if not present
+    setup_logging(PROJECT_DIR, LOGGING_DIR) # Setup configuration for logging
+    print_config(globals().copy()) # Print all global variables defined above
 
     # TODO: make graphviz work
 
