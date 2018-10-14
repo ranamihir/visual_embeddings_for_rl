@@ -1,3 +1,4 @@
+import logging
 import torch
 import torch.nn as nn
 
@@ -79,7 +80,7 @@ class EmbeddingNetwork(nn.Module):
         output = self.relu(output)
         # output = self.pool(output) # NOTE: Use pool in _get_fc_input_size if using it here
 
-        output = self.residual_layers(output)
+        # output = self.residual_layers(output)
 
         output = output.view(output.size(0), -1)
         output = self.fc1(output)
@@ -130,5 +131,7 @@ class EmbeddingNetwork(nn.Module):
             dummy_input = torch.zeros([1, self.in_channels, self.in_dim, self.in_dim]).float()
             dummy_output = layers(dummy_input)
             fc_size = dummy_output.flatten(0).shape[0]
+
+        logging.info('Input hidden size of FC1 in Embedding Network: {}'.format(fc_size))
 
         return fc_size
