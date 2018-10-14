@@ -76,7 +76,6 @@ def main():
 	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
 																BATCH_SIZE, NUM_PASSES_FOR_GENERATION, NUM_PAIRS_PER_EXAMPLE, \
 																NUM_FRAMES_IN_STACK, VAL_SIZE, TEST_SIZE, force=args.force)
-	exit()
 
 	# Network hyperparameters
 	in_dim, in_channels, out_dim = X.shape[-1], NUM_FRAMES_IN_STACK, 1024
