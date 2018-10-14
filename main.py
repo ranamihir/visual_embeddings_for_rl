@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
-import pickle
 import logging
 
 import torch
@@ -10,7 +9,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-from torch.utils.data.sampler import Sampler
 
 import matplotlib
 matplotlib.use('Agg')
@@ -78,7 +76,8 @@ def main():
 																NUM_FRAMES_IN_STACK, VAL_SIZE, TEST_SIZE, force=args.force)
 
 	# Network hyperparameters
-	in_dim, in_channels, out_dim = X.shape[-1], NUM_FRAMES_IN_STACK, 1024
+	img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
+	in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK, 1024
 	embedding_hidden_size, classification_hidden_size = 1024, 1024
 	num_outputs = len(TIME_BUCKETS)
 

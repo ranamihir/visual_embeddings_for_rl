@@ -6,6 +6,7 @@ import logging
 
 from sklearn.model_selection import train_test_split
 import torch
+from torch.autograd import Variable
 from torchvision import transforms
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
@@ -16,8 +17,8 @@ from capstone_project.utils import imshow, save_object, load_object
 class MovingMNISTDataset(Dataset):
 	# TODO: write function for implementing transforms
 	def __init__(self, X, y, transforms=None):
-		self.X = X
-		self.y = y
+		self.X = Variable(X)
+		self.y = Variable(y)
 		self.transforms = transforms
 
 	def __getitem__(self, index):
