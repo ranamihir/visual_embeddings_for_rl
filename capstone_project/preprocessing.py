@@ -40,13 +40,14 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 	test_path = data_path.format(filename, 'test')
 
 	if not force and os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
-		logging.info('Found all data sets on disk. Loading them...')
+		logging.info('Found all data sets on disk.')
 		data_loaders = []
 		for dataset_type in ['train', 'val', 'test']:
+			logging.info('Loading {} loader...'.format(dataset_type))
 			dataset = load_object(data_path.format(filename, dataset_type))
 			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
 			data_loaders.append(data_loader)
-		logging.info('Done.')
+			logging.info('Done.')
 
 	else:
 		logging.info('Did not find at least one data set on disk. Creating all 3...')
@@ -92,10 +93,10 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 					y = np.append(y, targets)
 				logging.info('Done.')
 
-			logging.info('Done. Generating {} data loader...'.format(dataset_type))
+			logging.info('Done. Generating {} loader...'.format(dataset_type))
 			X, y = torch.from_numpy(X), torch.from_numpy(y)
 			dataset = MovingMNISTDataset(X, y, transforms=None)
-			logging.info('Done. Dumping data loader to disk...')
+			logging.info('Done. Dumping {} loader to disk...'.format(dataset_type))
 			save_object(dataset, data_path.format(filename, dataset_type))
 			logging.info('Done.')
 
