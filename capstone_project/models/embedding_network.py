@@ -51,28 +51,11 @@ class EmbeddingNetwork(nn.Module):
         # Residual layers
         self.residual_layers = self._make_layer(block, 64, 64, num_blocks)
 
-        #Getting the dimension of fc layer by using a dummy variable
-        self.layers = nn.Sequential(
-                            conv3x3(in_channels, 32, stride=2),
-                            nn.BatchNorm2d(32),
-                            nn.ReLU(inplace=True),
-                            conv3x3(32, 64, stride=2),
-                            nn.BatchNorm2d(64),
-                            nn.ReLU(inplace=True),
-                            conv3x3(64, 64, stride=2),
-                            nn.BatchNorm2d(64),
-                            nn.ReLU(inplace=True),
-                            self._make_layer(block, 64, 64, num_blocks)
-                    )
+        # Automatically get dimension of FC layer by using dummy input
+        fc1_input_size = self._get_fc_input_size()
 
-        dummy_var = torch.zeros([1,self.in_channels,self.in_dim,self.in_dim]).float()
-        output_dummy_var = self.layers(dummy_var)
-        fc1_size = 1
-        for i in range(1,4):
-            fc1_size*=output_dummy_var.shape[i]
-        
         # Fully connected layers
-        self.fc1 = nn.Linear(fc1_size, hidden_size)
+        self.fc1 = nn.Linear(fc1_input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_dim)
 
         # Initialize weights
@@ -89,12 +72,12 @@ class EmbeddingNetwork(nn.Module):
         output = self.conv2(output)
         output = self.bn2(output)
         output = self.relu(output)
-        # output = self.pool(output)
+        # output = self.pool(output) # NOTE: Use pool in _get_fc_input_size if using it here
 
         output = self.conv3(output)
         output = self.bn3(output)
         output = self.relu(output)
-        # output = self.pool(output)
+        # output = self.pool(output) # NOTE: Use pool in _get_fc_input_size if using it here
 
         output = self.residual_layers(output)
 
@@ -126,3 +109,26 @@ class EmbeddingNetwork(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight)
                 nn.init.uniform_(m.bias)
+
+    def _get_fc_input_size(self):
+        layers = nn.Sequential(
+                        self.conv1,
+                        self.bn1,
+                        self.relu,
+                        self.conv2,
+                        self.bn2,
+                        self.relu,
+                        # self.pool,
+                        self.conv3,
+                        self.bn3,
+                        self.relu,
+                        # self.pool,
+                        self.residual_layers
+                )
+
+        with torch.no_grad():
+            dummy_input = torch.zeros([1, self.in_channels, self.in_dim, self.in_dim]).float()
+            dummy_output = layers(dummy_input)
+            fc_size = dummy_output.flatten(0).shape[0]
+
+        return fc_size
