@@ -33,18 +33,21 @@ class MovingMNISTDataset(Dataset):
 	def __len__(self):
 		return len(self.y)
 
-def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_passes_for_generation=1, num_pairs_per_example=1, num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
+def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_passes_for_generation=1, \
+						num_pairs_per_example=1, num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
+
+	filename_without_ext, ext = os.path.splitext(filename)
 	data_path = os.path.join(project_dir, data_dir, '{}_{}.pkl')
-	train_path = data_path.format(filename, 'train')
-	val_path = data_path.format(filename, 'val')
-	test_path = data_path.format(filename, 'test')
+	train_path = data_path.format(filename_without_ext, 'train')
+	val_path = data_path.format(filename_without_ext, 'val')
+	test_path = data_path.format(filename_without_ext, 'test')
 
 	if not force and os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
 		logging.info('Found all data sets on disk.')
 		data_loaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Loading {} data set...'.format(dataset_type))
-			dataset = load_object(data_path.format(filename, dataset_type))
+			dataset = load_object(data_path.format(filename_without_ext, dataset_type))
 			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
 			data_loaders.append(data_loader)
 			logging.info('Done.')
@@ -63,7 +66,8 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 			stacked frames are {}'.format(max_frame_diff, num_total_frames, num_frames_in_stack)
 
 		logging.info('Splitting data set into train, val, and test sets...')
-		data_dict = split_data(data, val_size, test_size, project_dir, data_dir, filename)
+		data_dict = split_data(data, val_size, test_size, project_dir, data_dir)
+		data = None # Free data
 		logging.info('Done.')
 
 		mean, std = 0, 1 # Calculate mean, std from train data
@@ -97,7 +101,7 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 			X, y = torch.from_numpy(X), torch.from_numpy(y)
 			dataset = MovingMNISTDataset(X, y, transforms=None)
 			logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
-			save_object(dataset, data_path.format(filename, dataset_type))
+			save_object(dataset, data_path.format(filename_without_ext, dataset_type))
 			logging.info('Done.')
 
 			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
@@ -111,7 +115,7 @@ def load_data(project_dir, data_dir, filename):
 	data = data.swapaxes(0,1)
 	return data
 
-def split_data(data, val_size, test_size, project_dir, data_dir, filename):
+def split_data(data, val_size, test_size, project_dir, data_dir):
 	num_test = int(np.floor(test_size*len(data)))
 	num_train_val = len(data) - num_test
 	num_val = int(np.floor(num_train_val*val_size/(1 - test_size)))
@@ -119,18 +123,11 @@ def split_data(data, val_size, test_size, project_dir, data_dir, filename):
 	train_data, test_data = train_test_split(data, test_size=num_test)
 	train_data, val_data = train_test_split(train_data, test_size=num_val)
 
-	filename, extension = os.path.splitext(filename)
-	save_object(train_data, os.path.join(project_dir, data_dir, '{}_train.pkl'.format(filename)))
-	save_object(val_data, os.path.join(project_dir, data_dir, '{}_val.pkl'.format(filename)))
-	save_object(test_data, os.path.join(project_dir, data_dir, '{}_test.pkl'.format(filename)))
-
 	data_dict = {
 		'train': train_data,
 		'val': val_data,
 		'test': test_data
 	}
-
-	data = None # Free data
 
 	return data_dict
 
