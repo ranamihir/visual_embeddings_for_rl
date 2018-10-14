@@ -38,17 +38,17 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 						num_pairs_per_example=1, num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
 
 	filename_without_ext, ext = os.path.splitext(filename)
-	data_path = os.path.join(project_dir, data_dir, '{}_{}.pkl')
-	train_path = data_path.format(filename_without_ext, 'train')
-	val_path = data_path.format(filename_without_ext, 'val')
-	test_path = data_path.format(filename_without_ext, 'test')
+	data_path = os.path.join(project_dir, data_dir, '{}_{}_{}_{}.pkl')
+	train_path = data_path.format(filename_without_ext, 'train', num_frames_in_stack, num_pairs_per_example)
+	val_path = data_path.format(filename_without_ext, 'val', num_frames_in_stack, num_pairs_per_example)
+	test_path = data_path.format(filename_without_ext, 'test', num_frames_in_stack, num_pairs_per_example)
 
 	if not force and os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
 		logging.info('Found all data sets on disk.')
 		data_loaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Loading {} data set...'.format(dataset_type))
-			dataset = load_object(data_path.format(filename_without_ext, dataset_type))
+			dataset = load_object(data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
 			data_loaders.append(data_loader)
 			logging.info('Done.')
@@ -60,11 +60,11 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 		data = load_data(project_dir, data_dir, filename)
 		logging.info('Done.')
 
-		num_total_frames = data.shape[1]
+		sequence_length = data.shape[1]
 		max_frame_diff = np.hstack([bucket for bucket in time_buckets]).max()
-		assert max_frame_diff <= num_total_frames-num_frames_in_stack, \
+		assert max_frame_diff <= sequence_length-num_frames_in_stack, \
 			'Cannot have difference of {} when sequence length is {} and number of \
-			stacked frames are {}'.format(max_frame_diff, num_total_frames, num_frames_in_stack)
+			stacked frames are {}'.format(max_frame_diff, sequence_length, num_frames_in_stack)
 
 		logging.info('Splitting data set into train, val, and test sets...')
 		data_dict = split_data(data, val_size, test_size, project_dir, data_dir)
@@ -84,7 +84,7 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 		imshow(data_dict['train'], mean, std, project_dir, plots_dir)
 
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
-		differences_dict = get_frame_differences_dict(num_total_frames, max_frame_diff, num_frames_in_stack)
+		differences_dict = get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
 
 		data_loaders = []
 		for dataset_type in ['train', 'val', 'test']:
@@ -98,11 +98,10 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 					y = np.append(y, targets)
 				logging.info('Done.')
 
-			logging.info('Done. Generating {} data set...'.format(dataset_type))
 			X, y = torch.from_numpy(X), torch.from_numpy(y)
 			dataset = MovingMNISTDataset(X, y, transforms=None)
 			logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
-			save_object(dataset, data_path.format(filename_without_ext, dataset_type))
+			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			logging.info('Done.')
 
 			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
@@ -147,7 +146,7 @@ def get_time_buckets_dict(time_buckets):
 	logging.info('Done.')
 	return buckets_dict
 
-def get_frame_differences_dict(num_total_frames, max_frame_diff, num_frames_in_stack):
+def get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack):
 	'''
 	Returns a dict with the key as the time difference between the frames
 	and the value as a list of tuples (start_frame, end_frame) containing
@@ -159,7 +158,7 @@ def get_frame_differences_dict(num_total_frames, max_frame_diff, num_frames_in_s
 	for diff in differences:
 		start_frame = num_frames_in_stack-1
 		end_frame = start_frame+diff
-		while end_frame <= num_total_frames-1:
+		while end_frame <= sequence_length-1:
 			differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
 			start_frame += 1
 			end_frame += 1
