@@ -28,22 +28,26 @@ parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', 
 parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
                     required=False, default='data')
+parser.add_argument('--force', action='store_true', help='overwrites all existing data')
+parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', help='path to checkpoints directory', \
+                    required=False, default='checkpoints') # TODO: load-ckpt
 parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, type=int, default=64)
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=10)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
 parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='device id of gpu', required=False, type=int)
 parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int, default=1)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
-parser.add_argument('--force', action='store_true', help='overwrites all existing data')
-# TODO: load-ckpt
-parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', help='path to checkpoints directory', required=False)
+parser.add_argument('--num-passes', metavar='NUM_PASSES_FOR_GENERATION', dest='num_passes', help='number of passes through data to generate pairs', \
+                    required=False, type=int, default=1)
+parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, type=int, default=2)
+parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, type=int, default=5)
 args = parser.parse_args()
 
 
 # Globals
 PROJECT_DIR = args.project_dir if args.project_dir else '/home/mihir/Desktop/GitHub/nyu/learning_visual_embeddings/'
 DATA_DIR,  PLOTS_DIR, LOGGING_DIR = args.data_dir, 'plots', 'logs'
-CHECKPOINTS_DIR = args.checkpoints_dir if args.checkpoints_dir else 'checkpoints'
+CHECKPOINTS_DIR = args.checkpoints_dir
 DATASET = args.dataset if args.dataset else 'mnist_test_seq.npy'
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
 
@@ -57,9 +61,9 @@ if args.device_id and DEVICE == 'cuda':
     DEVICE_ID = args.device_id
     torch.cuda.set_device(DEVICE_ID)
 
-NUM_PASSES_FOR_GENERATION = 1   # number of passes through data for pair generation
-NUM_FRAMES_IN_STACK = 2         # number of (total) frames to concatenate for each video
-NUM_PAIRS_PER_EXAMPLE = 5       # number of pairs to generate for given video and time difference
+NUM_PASSES_FOR_GENERATION = args.num_passes   # number of passes through data for pair generation
+NUM_FRAMES_IN_STACK = args.num_frames         # number of (total) frames to concatenate for each video
+NUM_PAIRS_PER_EXAMPLE = args.num_pairs        # number of pairs to generate for given video and time difference
 TIME_BUCKETS = [[0], [1], [2], [3,4], range(5,11,1)]
 
 def main():
