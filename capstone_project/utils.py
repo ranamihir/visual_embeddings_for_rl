@@ -140,34 +140,37 @@ def load_object(filepath):
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
                     val_loss_history, train_accuracy_history, val_accuracy_history, epoch, checkpoints_dir='checkpoints'):
-    embedding_state = {'state_dict': embedding_network.state_dict()}
-    classification_state = {'state_dict': classification_network.state_dict(), 'optimizer': optimizer.state_dict(), \
-        'epoch': epoch, 'train_loss_history': train_loss_history, 'val_loss_history': val_loss_history, \
-        'train_accuracy_history': train_accuracy_history, 'val_accuracy_history': val_accuracy_history}
-    torch.save(embedding_state, os.path.join(checkpoints_dir, \
-        'embedding_network_{}.pkl'.format(epoch)))
-    torch.save(classification_state, os.path.join(checkpoints_dir, \
-        'classification_network_{}.pkl'.format(epoch)))
+   state_dict = {'embedding_state_dict': embedding_network.state_dict(),
+        'classification_state_dict': classification_network.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'epoch': epoch,
+        'train_loss_history': train_loss_history,
+        'val_loss_history': val_loss_history,
+        'train_accuracy_history': train_accuracy_history,
+        'val_accuracy_history': val_accuracy_history
+    }
+
+    torch.save(state_dict, os.path.join(checkpoints_dir, \
+        'state_dict_{}.pkl'.format(epoch)))
 
 def load_checkpoint(embedding_network, classification_network, optimizer, device, epoch, checkpoints_dir='checkpoints'):
     train_loss_history, val_loss_history = [], []
     train_accuracy_history, val_accuracy_history = [], []
 
     # Note: Input model & optimizer should be pre-defined. This routine only updates their states.
-    embedding_path = os.path.join(checkpoints_dir, 'embedding_network_{}.pkl'.format(epoch))
-    classification_path = os.path.join(checkpoints_dir, 'classification_network_{}.pkl'.format(epoch))
-    if os.path.isfile(embedding_path) and os.path.isfile(classification_path):
-        logging.info('Loading checkpoint "{}" and "{}"...'.format(embedding_path, classification_path))
-        embedding_checkpoint = torch.load(embedding_path)
-        classification_checkpoint = torch.load(classification_path)
-        assert epoch == classification_checkpoint['epoch']
-        embedding_network.load_state_dict(embedding_checkpoint['state_dict'])
-        classification_network.load_state_dict(classification_checkpoint['state_dict'])
-        optimizer.load_state_dict(classification_checkpoint['optimizer'])
-        train_loss_history = classification_checkpoint['train_loss_history']
-        val_loss_history = classification_checkpoint['val_loss_history']
-        train_accuracy_history = classification_checkpoint['train_accuracy_history']
-        val_accuracy_history = classification_checkpoint['val_accuracy_history']
+    state_dict_path = os.path.join(checkpoints_dir, 'state_dict_{}.pkl'.format(epoch))
+    if os.path.isfile(state_dict_path):
+        logging.info('Loading checkpoint "{}"...'.format(state_dict_path))
+        state_dict = torch.load(state_dict_path)
+        assert epoch == state_dict['epoch']
+
+        embedding_network.load_state_dict(state_dict['embedding_state_dict'])
+        classification_network.load_state_dict(state_dict['classification_state_dict'])
+        optimizer.load_state_dict(state_dict['optimizer'])
+        train_loss_history = state_dict['train_loss_history']
+        val_loss_history = state_dict['val_loss_history']
+        train_accuracy_history = state_dict['train_accuracy_history']
+        val_accuracy_history = state_dict['val_accuracy_history']
 
         embedding_network = embedding_network.to(device)
         classification_network = classification_network.to(device)
@@ -176,9 +179,9 @@ def load_checkpoint(embedding_network, classification_network, optimizer, device
                 if isinstance(v, torch.Tensor):
                     state[k] = v.to(device)
 
-        logging.info('Loaded checkpoint "{}".'.format(embedding_path, classification_path))
+        logging.info('Successfully loaded checkpoint "{}".'.format(state_dict_path))
 
     else:
-        logging.info('No checkpoint found at "{}" and/or "{}"!'.format(embedding_path, classification_path))
+        raise FileNotFoundError('No checkpoint found at "{}"!'.format(state_dict_path))
 
     return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, val_accuracy_history
