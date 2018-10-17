@@ -16,9 +16,11 @@ from capstone_project.utils import imshow, save_object, load_object
 
 class MovingMNISTDataset(Dataset):
 	# TODO: write function for implementing transforms
-	def __init__(self, X, y, transforms=None):
+	def __init__(self, X, y, differences, frame_numbers, transforms=None):
 		self.X = Variable(X)
 		self.y = Variable(y)
+		self.differences = Variable(differences)
+		self.frame_numbers = Variable(frame_numbers)
 		self.transforms = transforms
 
 	def __getitem__(self, index):
@@ -26,10 +28,11 @@ class MovingMNISTDataset(Dataset):
 		#     data = self.transforms(data)
 
 		# Load data and get label
-		x1 = self.X[index][0]
-		x2 = self.X[index][1]
+		x1, x2 = self.X[index]
 		y = self.y[index]
-		return x1, x2, y
+		difference = self.differences[index]
+		frame1, frame2 = self.frame_numbers[index]
+		return x1, x2, y, difference, (frame1, frame2)
 
 	def __len__(self):
 		return len(self.y)
@@ -89,20 +92,26 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 		data_loaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Generating {} data set...'.format(dataset_type))
-			X, y = np.array([]), np.array([])
+			stacked_img_pairs, target_buckets = np.array([]), np.array([])
+			target_differences, target_frame_numbers = np.array([]), np.array([])
 			for i in range(num_passes_for_generation):
 				logging.info('Making pass {} through data...'.format(i+1))
 				for difference in range(max_frame_diff+1):
-					video_pairs, targets = get_samples_at_difference(data_dict[dataset_type], difference, differences_dict, num_pairs_per_example, num_frames_in_stack, time_buckets_dict)
-					X = np.vstack((X, video_pairs)) if X.size else video_pairs
-					y = np.append(y, targets)
+					img_pairs, buckets, differences, frame_numbers = get_samples_at_difference(data_dict[dataset_type], \
+																	difference, differences_dict, num_pairs_per_example, \
+																	num_frames_in_stack, time_buckets_dict)
+					stacked_img_pairs = np.vstack((stacked_img_pairs, img_pairs)) if stacked_img_pairs.size else img_pairs
+					target_buckets = np.append(target_buckets, buckets)
+					target_differences = np.append(target_differences, differences)
+					target_frame_numbers = np.vstack((target_frame_numbers, frame_numbers)) if target_frame_numbers.size else frame_numbers
 				logging.info('Done.')
 
-			X, y = torch.from_numpy(X), torch.from_numpy(y)
-			dataset = MovingMNISTDataset(X, y, transforms=None)
-			logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
-			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
-			logging.info('Done.')
+			stacked_img_pairs, target_buckets = torch.from_numpy(stacked_img_pairs), torch.from_numpy(target_buckets)
+			target_differences, target_frame_numbers = torch.from_numpy(target_differences), torch.from_numpy(target_frame_numbers)
+			dataset = MovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, target_frame_numbers, transforms=None)
+			# logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
+			# save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
+			# logging.info('Done.')
 
 			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 			data_loaders.append(data_loader)
@@ -167,12 +176,12 @@ def get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_st
 
 def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, num_frames_in_stack, time_buckets_dict):
 	'''
-	The task of this function is to get the samples by first selecting the list of tuples
-	for the associated time difference, and then sampling the num of pairs per video example
-	and then finally returning, the video pairs and their associated class(for the time bucket)
+	Returns samples by selecting the list of tuples for the associated time difference,
+	sampling the num of pairs per video example, and finally returning the (stacked) image pairs,
+	their associated buckets (classes), frame difference, and last frame numbers for each pair (tuple)
 	'''
 	logging.info('Getting all pairs with a frame difference of {}...'.format(difference))
-	video_pairs, y = [], []
+	img_pairs, target_buckets, differences, frame_numbers = [], [], [], []
 	candidates = differences_dict[difference]
 	np.random.seed(1337)
 	idx_pairs = np.random.choice(len(candidates), size=num_pairs_per_example)
@@ -181,8 +190,10 @@ def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_
 			target1_last_frame, target2_last_frame = candidates[idx_pair]
 			target1_frames = list(range(target1_last_frame-num_frames_in_stack+1, target1_last_frame+1))
 			target2_frames = list(range(target2_last_frame-num_frames_in_stack+1, target2_last_frame+1))
-			video_pairs.append([row[target1_frames], row[target2_frames]])
+			img_pairs.append([row[target1_frames], row[target2_frames]])
 			bucket = time_buckets_dict[difference]
-			y.append(bucket)
+			target_buckets.append(bucket)
+			differences.append(difference)
+			frame_numbers.append(tuple((target1_last_frame, target2_last_frame)))
 	logging.info('Done.')
-	return np.array(video_pairs), np.array(y)
+	return np.array(img_pairs), np.array(target_buckets), np.array(differences), np.array(frame_numbers)
