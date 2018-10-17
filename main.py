@@ -100,8 +100,8 @@ def main():
 	stop_epoch = N_EPOCHS
 
 	# Uncomment this line to load model already dumped
-	# embedding_network, classification_network, optimizer, train_loss_history, val_loss_history = \
-		# load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, CHECKPOINTS_DIR)
+	# embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, val_accuracy_history = \
+		# load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, PROJECT_DIR, CHECKPOINTS_DIR)
 
 	for epoch in range(1, N_EPOCHS+1):
 		try:
@@ -135,13 +135,13 @@ def main():
 		except KeyboardInterrupt:
 			# Save the model checkpoints
 			logging.info('Keyboard Interrupted!')
-			stop_epoch = epoch
+			stop_epoch = epoch-1
 			break
 
 	# Save the model checkpoint
 	logging.info('Dumping model and results...')
 	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-		train_accuracy_history, val_accuracy_history, stop_epoch, CHECKPOINTS_DIR)
+		train_accuracy_history, val_accuracy_history, stop_epoch, PROJECT_DIR, CHECKPOINTS_DIR)
 	logging.info('Done.')
 
 	logging.info('Saving and plotting loss and accuracy histories...')

@@ -138,7 +138,7 @@ def load_object(filepath):
 	return object
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
-					val_loss_history, train_accuracy_history, val_accuracy_history, epoch, checkpoints_dir='checkpoints'):
+					val_loss_history, train_accuracy_history, val_accuracy_history, epoch, project_dir, checkpoints_dir):
 
 	state_dict = {
 		'embedding_state_dict': embedding_network.state_dict(),
@@ -151,14 +151,14 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
 		'val_accuracy_history': val_accuracy_history
 	}
 
-	torch.save(state_dict, os.path.join(checkpoints_dir, 'state_dict_{}.pkl'.format(epoch)))
+	torch.save(state_dict, os.path.join(project_dir, checkpoints_dir, 'state_dict_{}.pkl'.format(epoch)))
 
-def load_checkpoint(embedding_network, classification_network, optimizer, device, epoch, checkpoints_dir='checkpoints'):
+def load_checkpoint(embedding_network, classification_network, optimizer, device, epoch, project_dir, checkpoints_dir):
 	train_loss_history, val_loss_history = [], []
 	train_accuracy_history, val_accuracy_history = [], []
 
 	# Note: Input model & optimizer should be pre-defined. This routine only updates their states.
-	state_dict_path = os.path.join(checkpoints_dir, 'state_dict_{}.pkl'.format(epoch))
+	state_dict_path = os.path.join(project_dir, checkpoints_dir, 'state_dict_{}.pkl'.format(epoch))
 	if os.path.isfile(state_dict_path):
 		logging.info('Loading checkpoint "{}"...'.format(state_dict_path))
 		state_dict = torch.load(state_dict_path)
