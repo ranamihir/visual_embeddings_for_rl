@@ -109,9 +109,9 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 			stacked_img_pairs, target_buckets = torch.from_numpy(stacked_img_pairs), torch.from_numpy(target_buckets)
 			target_differences, target_frame_numbers = torch.from_numpy(target_differences), torch.from_numpy(target_frame_numbers)
 			dataset = MovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, target_frame_numbers, transforms=None)
-			# logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
-			# save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
-			# logging.info('Done.')
+			logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
+			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
+			logging.info('Done.')
 
 			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 			data_loaders.append(data_loader)
