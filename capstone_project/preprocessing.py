@@ -15,7 +15,6 @@ from capstone_project.utils import imshow, save_object, load_object
 
 
 class MovingMNISTDataset(Dataset):
-	# TODO: write function for implementing transforms
 	def __init__(self, X, y, differences, frame_numbers, transforms=None):
 		self.X = Variable(X)
 		self.y = Variable(y)
@@ -24,14 +23,15 @@ class MovingMNISTDataset(Dataset):
 		self.transforms = transforms
 
 	def __getitem__(self, index):
-		# if self.transforms is not None:
-		#     data = self.transforms(data)
-
-		# Load data and get label
 		x1, x2 = self.X[index]
 		y = self.y[index]
 		difference = self.differences[index]
 		frame1, frame2 = self.frame_numbers[index]
+
+		if self.transforms:
+			x1 = self.transforms(x1)
+			x2 = self.transforms(x2)
+
 		return x1, x2, y, difference, (frame1, frame2)
 
 	def __len__(self):
@@ -71,18 +71,16 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 
 		logging.info('Splitting data set into train, val, and test sets...')
 		data_dict = split_data(data, val_size, test_size, project_dir, data_dir)
-		data = None # Free data
+		data = None # Free memory
 		logging.info('Done.')
 
-		mean, std = 0, 1 # Calculate mean, std from train data
-		# TODO: Normalize data
-		# mean = np.mean(dataset)
-		# std = np.std(dataset)
-		# dataset = (dataset - mean)/std
-		# data_transform = transforms.Compose([
-		#     transforms.ToTensor(),
-		#     transforms.Normalize((mean,), (std,))
-		# ])
+		# Calculate mean, std from train data, and normalize data
+		mean = np.mean(data_dict['train'])
+		std = np.std(data_dict['train'])
+		data_dict['train'] = (data_dict['train'] - mean)/std
+		normalize = transforms.Compose([
+		    transforms.Normalize((mean,)*num_frames_in_stack, (std,)*num_frames_in_stack)
+		])
 
 		imshow(data_dict['train'], mean, std, project_dir, plots_dir)
 
@@ -108,7 +106,7 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 
 			stacked_img_pairs, target_buckets = torch.from_numpy(stacked_img_pairs), torch.from_numpy(target_buckets)
 			target_differences, target_frame_numbers = torch.from_numpy(target_differences), torch.from_numpy(target_frame_numbers)
-			dataset = MovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, target_frame_numbers, transforms=None)
+			dataset = MovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, target_frame_numbers, transforms=normalize)
 			logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
 			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			logging.info('Done.')
