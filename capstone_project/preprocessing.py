@@ -171,7 +171,7 @@ def get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_st
 			differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
 			start_frame += 1
 			end_frame += 1
-	print('Done.')
+	logging.info('Done.')
 	return differences_dict
 
 def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, num_frames_in_stack, time_buckets_dict):
