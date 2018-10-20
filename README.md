@@ -7,7 +7,7 @@ Members:
 
 
 ## Requirements
-For ease of setup, we have created a [requirements.yaml](https://github.com/ranamihir/capstone_project/blob/master/requirements.yaml) file which will create a conda environment with the name `capstone_project` and install all dependencies and requirements into that environment. To do this:
+For ease of setup, we have created a [requirements.yaml](https://github.com/ranamihir/learning_visual_embeddings/blob/master/requirements.yaml) file which will create a conda environment with the name `capstone_project` and install all dependencies and requirements into that environment. To do this:
   - Install Anaconda and run:
 ```
 conda env create -f requirements.yaml
