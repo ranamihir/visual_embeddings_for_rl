@@ -140,21 +140,19 @@ def main():
 	logging.info('Done.')
 
 	logging.info('Saving and plotting loss and accuracy histories...')
-	fig = plt.figure()
 	loss_history_df = pd.DataFrame({
 		'train': train_loss_history,
 		'test': val_loss_history,
 	})
-	loss_history_df.plot(alpha=0.5, figsize=(10, 8))
-	save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
+	plot = loss_history_df.plot(alpha=0.5, figsize=(10, 8), title='Loss vs. Iterations')
+	save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'loss_vs_iterations.png')
 
-	fig = plt.figure()
 	accuracy_history_df = pd.DataFrame({
 		'train': train_accuracy_history,
 		'test': val_accuracy_history,
 	})
-	accuracy_history_df.plot(alpha=0.5, figsize=(10, 8))
-	save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_iterations.png')
+	plot = accuracy_history_df.plot(alpha=0.5, figsize=(10, 8))
+	save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'accuracies_vs_iterations.png')
 	logging.info('Done.')
 
 if __name__ == '__main__':
