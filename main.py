@@ -13,7 +13,6 @@ from torch.autograd import Variable
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from torchviz import make_dot, make_dot_from_trace
 
 from capstone_project.preprocessing import generate_dataloaders
 from capstone_project.models.embedding_network import EmbeddingNetwork
@@ -26,7 +25,6 @@ parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', 
 parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
 					required=False, default='data')
-parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', help='path to checkpoints directory', \
 					required=False, default='checkpoints') # TODO: load-ckpt
 parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, type=int, default=64)
@@ -37,6 +35,7 @@ parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs 
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, type=int, default=5)
+parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 args = parser.parse_args()
 
 
@@ -65,8 +64,6 @@ def main():
 	make_dirs(PROJECT_DIR, [CHECKPOINTS_DIR, PLOTS_DIR, LOGGING_DIR]) # Create all required directories if not present
 	setup_logging(PROJECT_DIR, LOGGING_DIR) # Setup configuration for logging
 	print_config(globals().copy()) # Print all global variables defined above
-
-	# TODO: make graphviz work
 
 	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
 																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
@@ -158,15 +155,6 @@ def main():
 	})
 	accuracy_history_df.plot(alpha=0.5, figsize=(10, 8))
 	save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_iterations.png')
-	logging.info('Done.')
-
-	logging.info('Generating and saving visualization of computational graph...')
-	with torch.onnx.set_training(embedding_network, False) and torch.onnx.set_training(classification_network, False):
-		embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, in_dim, in_dim).to(DEVICE).float())
-		embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, in_dim, in_dim).to(DEVICE).float())
-		trace, _ = torch.jit.get_trace_graph(classification_network, args=(embedding_output1, embedding_output2,))
-		with open(os.path.join(PROJECT_DIR, PLOTS_DIR, 'model_DAG.svg'), 'w') as f:
-			f.write(make_dot_from_trace(trace)._repr_svg_())
 	logging.info('Done.')
 
 if __name__ == '__main__':
