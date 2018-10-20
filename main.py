@@ -151,7 +151,7 @@ def main():
 		'train': train_accuracy_history,
 		'test': val_accuracy_history,
 	})
-	plot = accuracy_history_df.plot(alpha=0.5, figsize=(10, 8))
+	plot = accuracy_history_df.plot(alpha=0.5, figsize=(10, 8), title='Accuracies vs. Iterations')
 	save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'accuracies_vs_iterations.png')
 	logging.info('Done.')
 
