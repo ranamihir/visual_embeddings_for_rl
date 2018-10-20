@@ -37,8 +37,8 @@ class MovingMNISTDataset(Dataset):
 	def __len__(self):
 		return len(self.y)
 
-def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_passes_for_generation=1, \
-						num_pairs_per_example=1, num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
+def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_pairs_per_example=1, \
+						num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
 
 	filename_without_ext, ext = os.path.splitext(filename)
 	data_path = os.path.join(project_dir, data_dir, '{}_{}_{}_{}.pkl')
@@ -92,17 +92,15 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 			logging.info('Generating {} data set...'.format(dataset_type))
 			stacked_img_pairs, target_buckets = np.array([]), np.array([])
 			target_differences, target_frame_numbers = np.array([]), np.array([])
-			for i in range(num_passes_for_generation):
-				logging.info('Making pass {} through data...'.format(i+1))
-				for difference in range(max_frame_diff+1):
-					img_pairs, buckets, differences, frame_numbers = get_samples_at_difference(data_dict[dataset_type], \
-																	difference, differences_dict, num_pairs_per_example, \
-																	num_frames_in_stack, time_buckets_dict)
-					stacked_img_pairs = np.vstack((stacked_img_pairs, img_pairs)) if stacked_img_pairs.size else img_pairs
-					target_buckets = np.append(target_buckets, buckets)
-					target_differences = np.append(target_differences, differences)
-					target_frame_numbers = np.vstack((target_frame_numbers, frame_numbers)) if target_frame_numbers.size else frame_numbers
-				logging.info('Done.')
+
+			for difference in range(max_frame_diff+1):
+				img_pairs, buckets, differences, frame_numbers = get_samples_at_difference(data_dict[dataset_type], \
+																difference, differences_dict, num_pairs_per_example, \
+																num_frames_in_stack, time_buckets_dict)
+				stacked_img_pairs = np.vstack((stacked_img_pairs, img_pairs)) if stacked_img_pairs.size else img_pairs
+				target_buckets = np.append(target_buckets, buckets)
+				target_differences = np.append(target_differences, differences)
+				target_frame_numbers = np.vstack((target_frame_numbers, frame_numbers)) if target_frame_numbers.size else frame_numbers
 
 			stacked_img_pairs, target_buckets = torch.from_numpy(stacked_img_pairs), torch.from_numpy(target_buckets)
 			target_differences, target_frame_numbers = torch.from_numpy(target_differences), torch.from_numpy(target_frame_numbers)

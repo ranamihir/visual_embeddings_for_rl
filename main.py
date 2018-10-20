@@ -35,8 +35,6 @@ parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', 
 parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='device id of gpu', required=False, type=int)
 parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int, default=1)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
-parser.add_argument('--num-passes', metavar='NUM_PASSES_FOR_GENERATION', dest='num_passes', help='number of passes through data to generate pairs', \
-					required=False, type=int, default=1)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, type=int, default=5)
 args = parser.parse_args()
@@ -59,7 +57,6 @@ if args.device_id and DEVICE == 'cuda':
 	DEVICE_ID = args.device_id
 	torch.cuda.set_device(DEVICE_ID)
 
-NUM_PASSES_FOR_GENERATION = args.num_passes   # number of passes through data for pair generation
 NUM_FRAMES_IN_STACK = args.num_frames         # number of (total) frames to concatenate for each video
 NUM_PAIRS_PER_EXAMPLE = args.num_pairs        # number of pairs to generate for given video and time difference
 TIME_BUCKETS = [[0], [1], [2], [3,4], range(5,11,1)]
@@ -72,7 +69,7 @@ def main():
 	# TODO: make graphviz work
 
 	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
-																BATCH_SIZE, NUM_PASSES_FOR_GENERATION, NUM_PAIRS_PER_EXAMPLE, \
+																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
 																NUM_FRAMES_IN_STACK, VAL_SIZE, TEST_SIZE, force=args.force)
 
 	# Network hyperparameters
@@ -101,7 +98,8 @@ def main():
 
 	# Uncomment this line to load model already dumped
 	# embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, val_accuracy_history = \
-		# load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, PROJECT_DIR, CHECKPOINTS_DIR)
+	# 	load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, \
+	# 					PROJECT_DIR, CHECKPOINTS_DIR)
 
 	for epoch in range(1, N_EPOCHS+1):
 		try:
@@ -140,8 +138,8 @@ def main():
 
 	# Save the model checkpoint
 	logging.info('Dumping model and results...')
-	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-		train_accuracy_history, val_accuracy_history, stop_epoch, PROJECT_DIR, CHECKPOINTS_DIR)
+	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, \
+					val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR)
 	logging.info('Done.')
 
 	logging.info('Saving and plotting loss and accuracy histories...')

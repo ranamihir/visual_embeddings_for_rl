@@ -32,9 +32,9 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
 		# Accurately compute loss, because of different batch size
 		loss_train += loss.item() * len(x1) / len(dataloader.dataset)
 
-		if batch_idx % (len(dataloader.dataset)//(5*y.shape[0])) == 0:
+		if (batch_idx+1) % (len(dataloader.dataset)//(5*y.shape[0])) == 0:
 			logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-				epoch, batch_idx * y.shape[0], len(dataloader.dataset),
+				epoch, (batch_idx+1) * y.shape[0], len(dataloader.dataset),
 				100. * batch_idx / len(dataloader), loss.item()))
 
 	optimizer.zero_grad()
@@ -137,8 +137,8 @@ def load_object(filepath):
 		return None
 	return object
 
-def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
-					val_loss_history, train_accuracy_history, val_accuracy_history, epoch, project_dir, checkpoints_dir):
+def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, \
+					val_accuracy_history, epoch, dataset, num_frames_in_stack, num_pairs_per_example, project_dir, checkpoints_dir):
 
 	state_dict = {
 		'embedding_state_dict': embedding_network.state_dict(),
@@ -151,14 +151,19 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
 		'val_accuracy_history': val_accuracy_history
 	}
 
-	torch.save(state_dict, os.path.join(project_dir, checkpoints_dir, 'state_dict_{}.pkl'.format(epoch)))
+	state_dict_name = 'state_dict_{}_{}_{}_{}.pkl'.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, epoch)
+	torch.save(state_dict, os.path.join(project_dir, checkpoints_dir, state_dict_name))
 
-def load_checkpoint(embedding_network, classification_network, optimizer, device, epoch, project_dir, checkpoints_dir):
+def load_checkpoint(embedding_network, classification_network, optimizer, device, epoch, dataset, num_frames_in_stack, \
+					num_pairs_per_example, project_dir, checkpoints_dir):
+	# Note: Input model & optimizer should be pre-defined. This routine only updates their states.
+
 	train_loss_history, val_loss_history = [], []
 	train_accuracy_history, val_accuracy_history = [], []
 
-	# Note: Input model & optimizer should be pre-defined. This routine only updates their states.
-	state_dict_path = os.path.join(project_dir, checkpoints_dir, 'state_dict_{}.pkl'.format(epoch))
+	state_dict_name = 'state_dict_{}_{}_{}_{}.pkl'.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, epoch)
+	state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
+
 	if os.path.isfile(state_dict_path):
 		logging.info('Loading checkpoint "{}"...'.format(state_dict_path))
 		state_dict = torch.load(state_dict_path)
