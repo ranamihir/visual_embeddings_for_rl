@@ -35,7 +35,7 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
 		if (batch_idx+1) % (len(dataloader.dataset)//(5*y.shape[0])) == 0:
 			logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
 				epoch, (batch_idx+1) * y.shape[0], len(dataloader.dataset),
-				100. * batch_idx / len(dataloader), loss.item()))
+				100. * (batch_idx+1) / len(dataloader), loss.item()))
 
 	optimizer.zero_grad()
 	return loss_train
