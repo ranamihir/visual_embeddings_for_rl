@@ -33,7 +33,7 @@ optional arguments:
   -h, --help                          show this help message and exit
   --project-dir PROJECT_DIR           path to project directory
   --dataset DATASET                   name of dataset file in 'data' directory
-                                      mnist_test_seq.py | cifar10.py, default=mnist_test_seq.py
+                                      mnist_test_seq.npy | moving_bars_20_121.npy, default=mnist_test_seq.py
   --data-dir DATA_DIR                 path to data directory (used if different from "data")
   --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory (used if different from "checkpoints")
   --batch-size BATCH_SIZE             input batch size, default=64
