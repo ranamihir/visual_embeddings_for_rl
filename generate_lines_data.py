@@ -27,21 +27,21 @@ DATA_DIR, PLOTS_DIR = args.data_dir, 'plots'
 SEQ_LEN = args.seq_len
 IMG_DIM = args.img_dim
 
-one_image = np.zeros(shape=(IMG_DIM, IMG_DIM))
+image = np.zeros((IMG_DIM, IMG_DIM))
 velocities = [1, 3]
 
 data = np.array([])
-for c in range(len(velocities)):
-	for s_idx in range(one_image.shape[0]):
+for velocity in velocities:
+	for s_idx in range(IMG_DIM):
 		temp_seq = np.array([])
 		i = s_idx
 		for seq_num in range(SEQ_LEN):
-			temp = np.copy(one_image)
-			temp[:,i] = np.ones(temp.shape[0])
+			temp = np.copy(image)
+			temp[:, i] = np.ones(IMG_DIM)
 			temp_seq = np.append(temp_seq, temp)
-			i = (i + velocities[c]) % one_image.shape[0]
-		temp_seq = np.reshape(temp_seq,(1, -1, IMG_DIM, IMG_DIM))
-		data = temp_seq if not data.size else np.vstack((data, temp_seq))
+			i = (i + velocity) % IMG_DIM
+		temp_seq = np.reshape(temp_seq, (1, -1, IMG_DIM, IMG_DIM))
+		data = np.vstack((data, temp_seq)) if data.size else temp_seq
 
-data = np.reshape(data, (SEQ_LEN, -1, IMG_DIM, IMG_DIM))
+data = np.swapaxes(data, 0, 1)
 np.save(open(os.path.join(DATA_DIR, 'moving_bars_{}_{}.npy'.format(SEQ_LEN, IMG_DIM)), 'wb'), data)
