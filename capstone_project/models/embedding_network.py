@@ -40,11 +40,14 @@ class EmbeddingNetwork(nn.Module):
 		self.in_channels = in_channels
 
 		# Conv-ReLU layers with batch-norm and downsampling
-		self.conv1 = conv3x3(in_channels, 32, stride=2)
+		self.conv1 = conv3x3(in_channels, 32)
+		# self.conv1 = conv3x3(in_channels, 32, stride=2)  # NOTE: Use pool in _get_fc_input_size if using this
 		self.bn1 = nn.BatchNorm2d(32)
-		self.conv2 = conv3x3(32, 64, stride=2)
+		self.conv2 = conv3x3(32, 64)
+		# self.conv2 = conv3x3(32, 64, stride=2)  # NOTE: Use pool in _get_fc_input_size if using this
 		self.bn2 = nn.BatchNorm2d(64)
-		self.conv3 = conv3x3(64, 64, stride=2)
+		self.conv3 = conv3x3(64, 64)
+		# self.conv3 = conv3x3(64, 64, stride=2)  # NOTE: Use pool in _get_fc_input_size if using this
 		self.bn3 = nn.BatchNorm2d(64)
 		self.pool = nn.MaxPool2d(2)
 		self.relu = nn.ReLU(inplace=True)
@@ -73,12 +76,12 @@ class EmbeddingNetwork(nn.Module):
 		output = self.conv2(output)
 		output = self.bn2(output)
 		output = self.relu(output)
-		# output = self.pool(output) # NOTE: Use pool in _get_fc_input_size if using it here
+		output = self.pool(output) # NOTE: Use pool in _get_fc_input_size if using it here
 
 		output = self.conv3(output)
 		output = self.bn3(output)
 		output = self.relu(output)
-		# output = self.pool(output) # NOTE: Use pool in _get_fc_input_size if using it here
+		output = self.pool(output) # NOTE: Use pool in _get_fc_input_size if using it here
 
 		# output = self.residual_layers(output)
 
@@ -112,19 +115,18 @@ class EmbeddingNetwork(nn.Module):
 				nn.init.uniform_(m.bias)
 
 	def _get_fc_input_size(self):
-		layers = nn.Sequential(
-						self.conv1,
-						self.bn1,
-						self.relu,
-						self.conv2,
-						self.bn2,
-						self.relu,
-						# self.pool,
-						self.conv3,
-						self.bn3,
-						self.relu,
-						# self.pool,
-						self.residual_layers
+		layers = nn.Sequential(self.conv1,
+							self.bn1,
+							self.relu,
+							self.conv2,
+							self.bn2,
+							self.relu,
+							self.pool,
+							self.conv3,
+							self.bn3,
+							self.relu,
+							self.pool,
+							self.residual_layers
 				)
 
 		with torch.no_grad():

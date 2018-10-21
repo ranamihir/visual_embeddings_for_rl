@@ -13,7 +13,6 @@ from torch.autograd import Variable
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from torchviz import make_dot, make_dot_from_trace
 
 from capstone_project.preprocessing import generate_dataloaders
 from capstone_project.models.embedding_network import EmbeddingNetwork
@@ -26,7 +25,6 @@ parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', 
 parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
 					required=False, default='data')
-parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', help='path to checkpoints directory', \
 					required=False, default='checkpoints') # TODO: load-ckpt
 parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, type=int, default=64)
@@ -35,10 +33,9 @@ parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', 
 parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='device id of gpu', required=False, type=int)
 parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int, default=1)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
-parser.add_argument('--num-passes', metavar='NUM_PASSES_FOR_GENERATION', dest='num_passes', help='number of passes through data to generate pairs', \
-					required=False, type=int, default=1)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, type=int, default=5)
+parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 args = parser.parse_args()
 
 
@@ -59,7 +56,6 @@ if args.device_id and DEVICE == 'cuda':
 	DEVICE_ID = args.device_id
 	torch.cuda.set_device(DEVICE_ID)
 
-NUM_PASSES_FOR_GENERATION = args.num_passes   # number of passes through data for pair generation
 NUM_FRAMES_IN_STACK = args.num_frames         # number of (total) frames to concatenate for each video
 NUM_PAIRS_PER_EXAMPLE = args.num_pairs        # number of pairs to generate for given video and time difference
 TIME_BUCKETS = [[0], [1], [2], [3,4], range(5,11,1)]
@@ -69,10 +65,8 @@ def main():
 	setup_logging(PROJECT_DIR, LOGGING_DIR) # Setup configuration for logging
 	print_config(globals().copy()) # Print all global variables defined above
 
-	# TODO: make graphviz work
-
 	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
-																BATCH_SIZE, NUM_PASSES_FOR_GENERATION, NUM_PAIRS_PER_EXAMPLE, \
+																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
 																NUM_FRAMES_IN_STACK, VAL_SIZE, TEST_SIZE, force=args.force)
 
 	# Network hyperparameters
@@ -100,8 +94,9 @@ def main():
 	stop_epoch = N_EPOCHS
 
 	# Uncomment this line to load model already dumped
-	# embedding_network, classification_network, optimizer, train_loss_history, val_loss_history = \
-		# load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, CHECKPOINTS_DIR)
+	# embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, val_accuracy_history = \
+	# 	load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, \
+	# 					PROJECT_DIR, CHECKPOINTS_DIR)
 
 	for epoch in range(1, N_EPOCHS+1):
 		try:
@@ -135,40 +130,29 @@ def main():
 		except KeyboardInterrupt:
 			# Save the model checkpoints
 			logging.info('Keyboard Interrupted!')
-			stop_epoch = epoch
+			stop_epoch = epoch-1
 			break
 
 	# Save the model checkpoint
 	logging.info('Dumping model and results...')
-	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-		train_accuracy_history, val_accuracy_history, stop_epoch, CHECKPOINTS_DIR)
+	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, \
+					val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR)
 	logging.info('Done.')
 
 	logging.info('Saving and plotting loss and accuracy histories...')
-	fig = plt.figure()
 	loss_history_df = pd.DataFrame({
 		'train': train_loss_history,
 		'test': val_loss_history,
 	})
-	loss_history_df.plot(alpha=0.5, figsize=(10, 8))
-	save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
+	plot = loss_history_df.plot(alpha=0.5, figsize=(10, 8), title='Loss vs. Iterations')
+	save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'loss_vs_iterations.png')
 
-	fig = plt.figure()
 	accuracy_history_df = pd.DataFrame({
 		'train': train_accuracy_history,
 		'test': val_accuracy_history,
 	})
-	accuracy_history_df.plot(alpha=0.5, figsize=(10, 8))
-	save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_iterations.png')
-	logging.info('Done.')
-
-	logging.info('Generating and saving visualization of computational graph...')
-	with torch.onnx.set_training(embedding_network, False) and torch.onnx.set_training(classification_network, False):
-		embedding_output1 = embedding_network(train_loader.dataset[0][0].view(-1, 1, in_dim, in_dim).to(DEVICE).float())
-		embedding_output2 = embedding_network(train_loader.dataset[1][0].view(-1, 1, in_dim, in_dim).to(DEVICE).float())
-		trace, _ = torch.jit.get_trace_graph(classification_network, args=(embedding_output1, embedding_output2,))
-		with open(os.path.join(PROJECT_DIR, PLOTS_DIR, 'model_DAG.svg'), 'w') as f:
-			f.write(make_dot_from_trace(trace)._repr_svg_())
+	plot = accuracy_history_df.plot(alpha=0.5, figsize=(10, 8), title='Accuracies vs. Iterations')
+	save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'accuracies_vs_iterations.png')
 	logging.info('Done.')
 
 if __name__ == '__main__':
