@@ -16,15 +16,18 @@ import matplotlib.pyplot as plt
 
 
 def train(embedding_network, classification_network, dataloader, criterion, optimizer, device, epoch):
-	embedding_network.train()
-	classification_network.train()
 	loss_train = 0.
 	for batch_idx, (x1, x2, y, differences, frame_numbers) in enumerate(dataloader):
 		x1, x2, y = x1.to(device).float(), x2.to(device).float(), y.to(device).long()
+		embedding_network.train()
+		classification_network.train()
+
 		optimizer.zero_grad()
+
 		embedding_output1 = embedding_network(x1)
 		embedding_output2 = embedding_network(x2)
 		classification_output = classification_network(embedding_output1, embedding_output2)
+
 		loss = criterion(classification_output, y)
 		loss.backward()
 		optimizer.step()
