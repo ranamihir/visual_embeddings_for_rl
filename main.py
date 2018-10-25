@@ -26,7 +26,8 @@ parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name o
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
 					required=False, default='data')
 parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', help='path to checkpoints directory', \
-					required=False, default='checkpoints') # TODO: load-ckpt
+					required=False, default='checkpoints')
+parser.add_argument('--load-ckpt', metavar='LOAD_CHECKPOINT', dest='load_ckpt', help='name of checkpoint file to load', required=False)
 parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', required=False, type=int, default=64)
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=10)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
@@ -62,12 +63,15 @@ DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() els
 if args.device_id and DEVICE == 'cuda':
 	DEVICE_ID = args.device_id
 	torch.cuda.set_device(DEVICE_ID)
+CHECKPOINT_FILE = args.load_ckpt
 
 NUM_FRAMES_IN_STACK = args.num_frames         # number of (total) frames to concatenate for each video
 NUM_PAIRS_PER_EXAMPLE = args.num_pairs        # number of pairs to generate for given video and time difference
 TIME_BUCKETS = [[0], [1], [2], [3,4], range(5,11,1)]
 
 def main():
+	torch.set_num_threads(1) # Prevent error on KeyboardInterrupt with multiple GPUs
+
 	make_dirs(PROJECT_DIR, [CHECKPOINTS_DIR, PLOTS_DIR, LOGGING_DIR]) # Create all required directories if not present
 	setup_logging(PROJECT_DIR, LOGGING_DIR) # Setup configuration for logging
 	print_config(globals().copy()) # Print all global variables defined above
@@ -82,33 +86,40 @@ def main():
 	embedding_hidden_size, classification_hidden_size = 1024, 1024
 	num_outputs = len(TIME_BUCKETS)
 
+	start_epoch = 0 # Initialize starting epoch number (used later if checkpoint loaded)
+	stop_epoch = N_EPOCHS+start_epoch # Store epoch upto which model is trained (in case keyboard interrupts)
+
 	logging.info('Creating models...')
 	embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=args.use_pool, use_res=args.use_res)
 	classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs)
-
-	if torch.cuda.device_count() > 1 and (NGPU or PARALLEL):
-		DEVICE_IDS = range(torch.cuda.device_count()) if PARALLEL else range(NGPU)
-		logging.info('Using {}  GPUs!'.format(len(DEVICE_IDS)))
-		embedding_network = nn.DataParallel(embedding_network, device_ids=DEVICE_IDS)
-		classification_network = nn.DataParallel(classification_network, device_ids=DEVICE_IDS)
-	embedding_network = embedding_network.to(DEVICE)
-	classification_network = classification_network.to(DEVICE)
 	logging.info('Done.')
 
+	# Define criteria and optimizer
 	criterion_train = nn.CrossEntropyLoss()
 	criterion_test = nn.CrossEntropyLoss(reduction='sum')
 	optimizer = optim.Adam(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
 
 	train_loss_history, train_accuracy_history = [], []
 	val_loss_history, val_accuracy_history = [], []
-	stop_epoch = N_EPOCHS
 
-	# Uncomment this line to load model already dumped
-	# embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, val_accuracy_history = \
-	# 	load_checkpoint(embedding_network, classification_network, optimizer, DEVICE, 1, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, \
-	# 					PROJECT_DIR, CHECKPOINTS_DIR)
+	# Load model state dicts if required
+	if CHECKPOINT_FILE:
+		embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
+		train_accuracy_history, val_accuracy_history, epoch_trained = \
+			load_checkpoint(embedding_network, classification_network, optimizer, CHECKPOINT_FILE, PROJECT_DIR, CHECKPOINTS_DIR, DEVICE)
+		start_epoch = epoch_trained # Start from epoch_trained+1 epoch if checkpoint loaded
 
-	for epoch in range(1, N_EPOCHS+1):
+	# Check if model is to be parallelized
+	if torch.cuda.device_count() > 1 and (NGPU or PARALLEL):
+		DEVICE_IDS = range(torch.cuda.device_count()) if PARALLEL else range(NGPU)
+		logging.info('Using {} GPUs...'.format(len(DEVICE_IDS)))
+		embedding_network = nn.DataParallel(embedding_network, device_ids=DEVICE_IDS)
+		classification_network = nn.DataParallel(classification_network, device_ids=DEVICE_IDS)
+		logging.info('Done.')
+	embedding_network = embedding_network.to(DEVICE)
+	classification_network = classification_network.to(DEVICE)
+
+	for epoch in range(start_epoch+1, N_EPOCHS+start_epoch+1):
 		try:
 			train_loss = train(
 				embedding_network=embedding_network,
@@ -146,24 +157,25 @@ def main():
 	# Save the model checkpoint
 	logging.info('Dumping model and results...')
 	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, \
-					val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR)
+					val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL)
 	logging.info('Done.')
 
-	logging.info('Saving and plotting loss and accuracy histories...')
-	loss_history_df = pd.DataFrame({
-		'train': train_loss_history,
-		'test': val_loss_history,
-	})
-	plot = loss_history_df.plot(alpha=0.5, figsize=(10, 8), title='Loss vs. Iterations')
-	save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'loss_vs_iterations.png')
+	if len(train_loss_history):
+		logging.info('Saving and plotting loss and accuracy histories...')
+		loss_history_df = pd.DataFrame({
+			'train': train_loss_history,
+			'test': val_loss_history,
+		})
+		plot = loss_history_df.plot(alpha=0.5, figsize=(10, 8), title='Loss vs. Iterations')
+		save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'loss_vs_iterations.png')
 
-	accuracy_history_df = pd.DataFrame({
-		'train': train_accuracy_history,
-		'test': val_accuracy_history,
-	})
-	plot = accuracy_history_df.plot(alpha=0.5, figsize=(10, 8), title='Accuracies vs. Iterations')
-	save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'accuracies_vs_iterations.png')
-	logging.info('Done.')
+		accuracy_history_df = pd.DataFrame({
+			'train': train_accuracy_history,
+			'test': val_accuracy_history,
+		})
+		plot = accuracy_history_df.plot(alpha=0.5, figsize=(10, 8), title='Accuracies vs. Iterations')
+		save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'accuracies_vs_iterations.png')
+		logging.info('Done.')
 
 if __name__ == '__main__':
 	main()
