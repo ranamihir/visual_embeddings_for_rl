@@ -31,10 +31,13 @@ parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', hel
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=10)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
 parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='device id of gpu', required=False, type=int)
-parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int, default=1)
+parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int, default=0)
+parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, type=int, default=5)
+parser.add_argument('--use_pool', action='store_true', help='use pooling instead of strided convolutions')
+parser.add_argument('--use_res', action='store_true', help='use residual layers')
 parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 args = parser.parse_args()
 
@@ -50,7 +53,11 @@ BATCH_SIZE = args.batch_size    # input batch size for training
 N_EPOCHS = args.epochs          # number of epochs to train
 LR = args.lr                    # learning rate
 NGPU = args.ngpu                # number of GPUs
-# TODO: Incorporate NGPUs
+PARALLEL = args.parallel 		# use all GPUs
+
+if NGPU:
+	assert torch.cuda.device_count() >= NGPU, '{} GPUs not available!'.format(NGPU)
+
 DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
 if args.device_id and DEVICE == 'cuda':
 	DEVICE_ID = args.device_id
@@ -76,15 +83,18 @@ def main():
 	num_outputs = len(TIME_BUCKETS)
 
 	logging.info('Creating models...')
-	embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim).to(DEVICE)
-	classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs).to(DEVICE)
+	embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=args.use_pool, use_res=args.use_res)
+	classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs)
+
+	if torch.cuda.device_count() > 1 and (NGPU or PARALLEL):
+		DEVICE_IDS = range(torch.cuda.device_count()) if PARALLEL else range(NGPU)
+		logging.info('Using {}  GPUs!'.format(len(DEVICE_IDS)))
+		embedding_network = nn.DataParallel(embedding_network, device_ids=DEVICE_IDS)
+		classification_network = nn.DataParallel(classification_network, device_ids=DEVICE_IDS)
+	embedding_network = embedding_network.to(DEVICE)
+	classification_network = classification_network.to(DEVICE)
 	logging.info('Done.')
-	# if torch.cuda.device_count() > 1:
-	#     logging.info("Let's use", torch.cuda.device_count(), "GPUs!")
-	#     embedding_network = nn.DataParallel(embedding_network)
-	#     embedding_network.to(device)
-	#     classification_network = nn.DataParallel(classification_network)
-	#     classification_network.to(device)
+
 	criterion_train = nn.CrossEntropyLoss()
 	criterion_test = nn.CrossEntropyLoss(reduction='sum')
 	optimizer = optim.Adam(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
