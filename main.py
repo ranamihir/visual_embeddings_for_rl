@@ -32,7 +32,7 @@ parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', hel
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=10)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
 parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='device id of gpu', required=False, type=int)
-parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int, default=0)
+parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int)
 parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, type=int, default=2)
