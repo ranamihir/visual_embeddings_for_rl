@@ -23,11 +23,13 @@ pip install -e .
 ## Usage
 ```
 usage: main.py [-h] [--project-dir PROJECT_DIR] [--dataset DATASET]
-               [--data-dir DATA_DIR] [--force]
-               [--checkpoints-dir CHECKPOINTS_DIR] [--batch-size BATCH_SIZE]
+               [--data-dir DATA_DIR] [--checkpoints-dir CHECKPOINTS_DIR]
+               [--load-ckpt LOAD_CHECKPOINT] [--batch-size BATCH_SIZE]
                [--epochs EPOCHS] [--device DEVICE] [--device-id DEVICE_ID]
-               [--ngpu NGPU] [--lr LR] [--num-frames NUM_FRAMES_IN_STACK]
-               [--num-pairs NUM_PAIRS_PER_EXAMPLE]
+               [--ngpu NGPU] [--parallel] [--lr LR]
+               [--num-frames NUM_FRAMES_IN_STACK]
+               [--num-pairs NUM_PAIRS_PER_EXAMPLE] [--use_pool] [--use_res]
+               [--force]
 
 optional arguments:
   -h, --help                          show this help message and exit
@@ -36,13 +38,17 @@ optional arguments:
                                       mnist_test_seq.npy | moving_bars_20_121.npy, default=mnist_test_seq.py
   --data-dir DATA_DIR                 path to data directory (used if different from "data")
   --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory (used if different from "checkpoints")
+  --load-ckpt LOAD_CHECKPOINT         name of checkpoint file to load
   --batch-size BATCH_SIZE             input batch size, default=64
   --epochs EPOCHS                     number of epochs, default=10
   --lr LR                             learning rate, default=1e-4
   --device                            cuda | cpu, default=cuda
                                       device to train on
   --device-id DEVICE_ID               device id of gpu, default=0
-  --ngpu NGPU                         number of GPUs to use, default=1
+  --ngpu NGPU                         number of GPUs to use
+  --parallel                          use all GPUs available
   --num-frames NUM_FRAMES_IN_STACK    number of stacked frames, default=2
   --num-pairs NUM_PAIRS_PER_EXAMPLE   number of pairs per video, default=5
+  --use_pool                          use pooling instead of strided convolutions
+  --use_res                           use residual layers
   --force                             overwrites all existing data
