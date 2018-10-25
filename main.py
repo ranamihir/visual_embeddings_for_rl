@@ -35,8 +35,10 @@ parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='
 parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int)
 parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
-parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, type=int, default=2)
-parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, type=int, default=5)
+parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, \
+					type=int, default=2)
+parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, \
+					type=int, default=5)
 parser.add_argument('--use_pool', action='store_true', help='use pooling instead of strided convolutions')
 parser.add_argument('--use_res', action='store_true', help='use residual layers')
 parser.add_argument('--force', action='store_true', help='overwrites all existing data')
@@ -56,8 +58,10 @@ LR = args.lr                    # learning rate
 NGPU = args.ngpu                # number of GPUs
 PARALLEL = args.parallel 		# use all GPUs
 
+TOTAL_GPUs = torch.cuda.device_count() # Number of total GPUs available
+
 if NGPU:
-	assert torch.cuda.device_count() >= NGPU, '{} GPUs not available!'.format(NGPU)
+	assert TOTAL_GPUs >= NGPU, '{} GPUs not available!'.format(NGPU)
 
 DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
 if args.device_id and DEVICE == 'cuda':
@@ -77,8 +81,8 @@ def main():
 	print_config(globals().copy()) # Print all global variables defined above
 
 	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
-																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
-																NUM_FRAMES_IN_STACK, VAL_SIZE, TEST_SIZE, force=args.force)
+																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, \
+																VAL_SIZE, TEST_SIZE, force=args.force)
 
 	# Network hyperparameters
 	img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
@@ -110,8 +114,8 @@ def main():
 		start_epoch = epoch_trained # Start from epoch_trained+1 epoch if checkpoint loaded
 
 	# Check if model is to be parallelized
-	if torch.cuda.device_count() > 1 and (NGPU or PARALLEL):
-		DEVICE_IDS = range(torch.cuda.device_count()) if PARALLEL else range(NGPU)
+	if TOTAL_GPUs > 1 and (NGPU or PARALLEL):
+		DEVICE_IDS = range(TOTAL_GPUs) if PARALLEL else range(NGPU)
 		logging.info('Using {} GPUs...'.format(len(DEVICE_IDS)))
 		embedding_network = nn.DataParallel(embedding_network, device_ids=DEVICE_IDS)
 		classification_network = nn.DataParallel(classification_network, device_ids=DEVICE_IDS)
@@ -156,8 +160,9 @@ def main():
 
 	# Save the model checkpoint
 	logging.info('Dumping model and results...')
-	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, \
-					val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL)
+	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
+					train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, \
+					NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL)
 	logging.info('Done.')
 
 	if len(train_loss_history):
