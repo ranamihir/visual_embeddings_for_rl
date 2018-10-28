@@ -32,15 +32,15 @@ parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', hel
 parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', required=False, type=int, default=10)
 parser.add_argument('--device', metavar='DEVICE', dest='device', help='device', required=False)
 parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='device id of gpu', required=False, type=int)
-parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use', required=False, type=int)
+parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use (0,1,...,ngpu-1)', required=False, type=int)
 parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, \
 					type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, \
 					type=int, default=5)
-parser.add_argument('--use_pool', action='store_true', help='use pooling instead of strided convolutions')
-parser.add_argument('--use_res', action='store_true', help='use residual layers')
+parser.add_argument('--use-pool', action='store_true', help='use pooling instead of strided convolutions')
+parser.add_argument('--use-res', action='store_true', help='use residual layers')
 parser.add_argument('--force', action='store_true', help='overwrites all existing data')
 args = parser.parse_args()
 
@@ -48,7 +48,8 @@ args = parser.parse_args()
 # Globals
 PROJECT_DIR = args.project_dir if args.project_dir else '/home/mihir/Desktop/GitHub/nyu/learning_visual_embeddings/'
 DATA_DIR,  PLOTS_DIR, LOGGING_DIR = args.data_dir, 'plots', 'logs'
-CHECKPOINTS_DIR = args.checkpoints_dir
+CHECKPOINTS_DIR, CHECKPOINT_FILE = args.checkpoints_dir, args.load_ckpt
+
 DATASET = args.dataset if args.dataset else 'mnist_test_seq.npy'
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
 
@@ -64,10 +65,9 @@ if NGPU:
 	assert TOTAL_GPUs >= NGPU, '{} GPUs not available!'.format(NGPU)
 
 DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
-if args.device_id and DEVICE == 'cuda':
+if args.device_id and 'cuda' in DEVICE:
 	DEVICE_ID = args.device_id
 	torch.cuda.set_device(DEVICE_ID)
-CHECKPOINT_FILE = args.load_ckpt
 
 NUM_FRAMES_IN_STACK = args.num_frames         # number of (total) frames to concatenate for each video
 NUM_PAIRS_PER_EXAMPLE = args.num_pairs        # number of pairs to generate for given video and time difference
@@ -91,7 +91,7 @@ def main():
 	num_outputs = len(TIME_BUCKETS)
 
 	start_epoch = 0 # Initialize starting epoch number (used later if checkpoint loaded)
-	stop_epoch = N_EPOCHS+start_epoch # Store epoch upto which model is trained (in case keyboard interrupts)
+	stop_epoch = N_EPOCHS+start_epoch # Store epoch upto which model is trained (used in case of KeyboardInterrupt)
 
 	logging.info('Creating models...')
 	embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=args.use_pool, use_res=args.use_res)
@@ -111,7 +111,7 @@ def main():
 		embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
 		train_accuracy_history, val_accuracy_history, epoch_trained = \
 			load_checkpoint(embedding_network, classification_network, optimizer, CHECKPOINT_FILE, PROJECT_DIR, CHECKPOINTS_DIR, DEVICE)
-		start_epoch = epoch_trained # Start from epoch_trained+1 epoch if checkpoint loaded
+		start_epoch = epoch_trained # Start from (epoch_trained+1) if checkpoint loaded
 
 	# Check if model is to be parallelized
 	if TOTAL_GPUs > 1 and (NGPU or PARALLEL):
@@ -153,12 +153,11 @@ def main():
 			logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
 			logging.info('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
 		except KeyboardInterrupt:
-			# Save the model checkpoints
 			logging.info('Keyboard Interrupted!')
 			stop_epoch = epoch-1
 			break
 
-	# Save the model checkpoint
+	# Save the model checkpoints
 	logging.info('Dumping model and results...')
 	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
 					train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, \

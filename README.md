@@ -34,7 +34,7 @@ usage: main.py [-h] [--project-dir PROJECT_DIR] [--dataset DATASET]
 optional arguments:
   -h, --help                          show this help message and exit
   --project-dir PROJECT_DIR           path to project directory
-  --dataset DATASET                   name of dataset file in 'data' directory
+  --dataset DATASET                   name of dataset file in "data" directory
                                       mnist_test_seq.npy | moving_bars_20_121.npy, default=mnist_test_seq.py
   --data-dir DATA_DIR                 path to data directory (used if different from "data")
   --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory (used if different from "checkpoints")
@@ -45,10 +45,10 @@ optional arguments:
   --device                            cuda | cpu, default=cuda
                                       device to train on
   --device-id DEVICE_ID               device id of gpu, default=0
-  --ngpu NGPU                         number of GPUs to use
+  --ngpu NGPU                         number of GPUs to use (0,1,...,ngpu-1)
   --parallel                          use all GPUs available
   --num-frames NUM_FRAMES_IN_STACK    number of stacked frames, default=2
   --num-pairs NUM_PAIRS_PER_EXAMPLE   number of pairs per video, default=5
-  --use_pool                          use pooling instead of strided convolutions
-  --use_res                           use residual layers
+  --use-pool                          use max pooling instead of strided convolutions
+  --use-res                           use residual layers
   --force                             overwrites all existing data
