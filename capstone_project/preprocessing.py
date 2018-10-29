@@ -179,7 +179,6 @@ def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_
 	logging.info('Getting all pairs with a frame difference of {}...'.format(difference))
 	img_pairs, target_buckets, differences, frame_numbers = [], [], [], []
 	candidates = differences_dict[difference]
-	np.random.seed(1337)
 	idx_pairs = np.random.choice(len(candidates), size=num_pairs_per_example)
 	for row in data:
 		for idx_pair in idx_pairs:
