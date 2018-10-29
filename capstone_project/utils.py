@@ -47,8 +47,8 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 	embedding_network.eval()
 	classification_network.eval()
 	loss_test = 0.
-	y_ls = []
-	output_ls = []
+	y_hist = []
+	output_hist = []
 	with torch.no_grad():
 		for batch_idx, (x1, x2, y, differences, frame_numbers) in enumerate(dataloader):
 			x1, x2, y = x1.to(device).float(), x2.to(device).float(), y.to(device).long()
@@ -60,9 +60,9 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 			# Accurately compute loss, because of different batch size
 			loss_test += loss.item() / len(dataloader.dataset)
 
-			output_ls.append(classification_output)
-			y_ls.append(y)
-	return loss_test, torch.cat(output_ls, dim=0), torch.cat(y_ls, dim=0)
+			output_hist.append(classification_output)
+			y_hist.append(y)
+	return loss_test, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
 
 def accuracy(embedding_network, classification_network, dataloader, criterion, device):
 	_, y_predicted, y_true = test(
@@ -79,8 +79,7 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
 def imshow(data, mean, std, project_dir, plots_dir):
 	logging.info('Plotting sample data and saving to "data_sample.png"...')
 	image_dim = data.shape[-1]
-	np.random.seed(0)
-	images = data[np.random.choice(len(data), size=1)]
+	images = data[np.random.RandomState(0).choice(len(data), size=1)]
 	images = torch.from_numpy(images)
 
 	images = make_grid(images[0].reshape(-1, 1, image_dim, image_dim), nrow=5, padding=5, pad_value=1)

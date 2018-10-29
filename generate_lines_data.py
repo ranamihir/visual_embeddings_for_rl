@@ -26,28 +26,28 @@ IMG_DIM = args.img_dim
 VELOCITIES = [1, 3]
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
 
-def generate_data(img_dim, seq_len, velocities):
+def generate_data():
 	data = np.array([])
-	image = np.zeros((img_dim, img_dim))
+	image = np.zeros((IMG_DIM, IMG_DIM))
 
-	for velocity in velocities:
-		for s_idx in range(img_dim):
-			temp_seq = np.array([])
-			i = s_idx
-			for seq_num in range(seq_len):
+	for velocity in VELOCITIES:
+		for start_idx in range(IMG_DIM):
+			curr_seq = np.array([])
+			i = start_idx
+			for seq_num in range(SEQ_LEN):
 				temp = np.copy(image)
-				temp[:, i] = np.ones(img_dim)
-				temp_seq = np.append(temp_seq, temp)
-				i = (i + velocity) % img_dim
-			temp_seq = np.reshape(temp_seq, (1, -1, img_dim, img_dim))
-			data = np.vstack((data, temp_seq)) if data.size else temp_seq
+				temp[:, i] = np.ones(IMG_DIM)
+				curr_seq = np.append(curr_seq, temp)
+				i = (i + velocity) % IMG_DIM
+			curr_seq = np.reshape(curr_seq, (1, -1, IMG_DIM, IMG_DIM))
+			data = np.vstack((data, curr_seq)) if data.size else curr_seq
 
 	return data
 
-def split_and_dump_data(data, val_size, test_size, project_dir, data_dir):
-	num_test = int(np.floor(test_size*len(data)))
+def split_and_dump_data(data):
+	num_test = int(np.floor(TEST_SIZE*len(data)))
 	num_train_val = len(data) - num_test
-	num_val = int(np.floor(num_train_val*val_size/(1 - test_size)))
+	num_val = int(np.floor(num_train_val*VAL_SIZE/(1 - TEST_SIZE)))
 
 	train_data, test_data = train_test_split(data, test_size=num_test, random_state=1337)
 	train_data, val_data = train_test_split(train_data, test_size=num_val, random_state=1337)
@@ -58,13 +58,14 @@ def split_and_dump_data(data, val_size, test_size, project_dir, data_dir):
 		'test': test_data
 	}
 
-	np.save(open(os.path.join(DATA_DIR, 'moving_bars_{}_{}.npy'.format(SEQ_LEN, IMG_DIM)), 'wb'), data.swapaxes(0,1))
+	np.save(open(os.path.join(PROJECT_DIR, DATA_DIR, 'moving_bars_{}_{}.npy'.format(SEQ_LEN, IMG_DIM)), 'wb'), data.swapaxes(0,1))
 	for key in data_dict:
-		np.save(open(os.path.join(DATA_DIR, 'moving_bars_{}_{}_{}.npy'.format(SEQ_LEN, IMG_DIM, key)), 'wb'), data_dict[key].swapaxes(0,1))
+		np.save(open(os.path.join(PROJECT_DIR, DATA_DIR, 'moving_bars_{}_{}_{}.npy'.format(SEQ_LEN, IMG_DIM, key)), 'wb'), \
+				data_dict[key].swapaxes(0,1))
 
 def main():
-	data = generate_data(IMG_DIM, SEQ_LEN, VELOCITIES)
-	split_and_dump_data(data, VAL_SIZE, TEST_SIZE, PROJECT_DIR, DATA_DIR)
+	data = generate_data()
+	split_and_dump_data(data)
 
 if __name__ == '__main__':
 	main()

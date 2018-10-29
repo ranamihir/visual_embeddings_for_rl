@@ -48,12 +48,12 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 
 	if not force and os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
 		logging.info('Found all data sets on disk.')
-		data_loaders = []
+		dataloaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Loading {} data set...'.format(dataset_type))
 			dataset = load_object(data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
-			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
-			data_loaders.append(data_loader)
+			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
+			dataloaders.append(dataloader)
 			logging.info('Done.')
 
 	else:
@@ -87,7 +87,7 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
 		differences_dict = get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
 
-		data_loaders = []
+		dataloaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Generating {} data set...'.format(dataset_type))
 			stacked_img_pairs, target_buckets = np.array([]), np.array([])
@@ -109,10 +109,10 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			logging.info('Done.')
 
-			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-			data_loaders.append(data_loader)
+			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+			dataloaders.append(dataloader)
 
-	return data_loaders
+	return dataloaders
 
 def load_data(project_dir, data_dir, filename):
 	filename = os.path.join(project_dir, data_dir, filename)
@@ -179,7 +179,6 @@ def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_
 	logging.info('Getting all pairs with a frame difference of {}...'.format(difference))
 	img_pairs, target_buckets, differences, frame_numbers = [], [], [], []
 	candidates = differences_dict[difference]
-	np.random.seed(1337)
 	idx_pairs = np.random.choice(len(candidates), size=num_pairs_per_example)
 	for row in data:
 		for idx_pair in idx_pairs:
