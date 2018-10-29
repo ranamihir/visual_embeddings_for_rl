@@ -16,10 +16,10 @@ from capstone_project.utils import imshow, save_object, load_object
 
 class MovingMNISTDataset(Dataset):
 	def __init__(self, X, y, differences, frame_numbers, transforms=None):
-		self.X = Variable(X)
-		self.y = Variable(y)
-		self.differences = Variable(differences)
-		self.frame_numbers = Variable(frame_numbers)
+		self.X = X
+		self.y = y
+		self.differences = differences
+		self.frame_numbers = frame_numbers
 		self.transforms = transforms
 
 	def __getitem__(self, index):
@@ -37,7 +37,7 @@ class MovingMNISTDataset(Dataset):
 	def __len__(self):
 		return len(self.y)
 
-def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_pairs_per_example=1, \
+def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_pairs_per_example=5, \
 						num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
 
 	filename_without_ext, ext = os.path.splitext(filename)
