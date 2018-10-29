@@ -16,10 +16,10 @@ from capstone_project.utils import imshow, save_object, load_object
 
 class MovingMNISTDataset(Dataset):
 	def __init__(self, X, y, differences, frame_numbers, transforms=None):
-		self.X = Variable(X)
-		self.y = Variable(y)
-		self.differences = Variable(differences)
-		self.frame_numbers = Variable(frame_numbers)
+		self.X = X
+		self.y = y
+		self.differences = differences
+		self.frame_numbers = frame_numbers
 		self.transforms = transforms
 
 	def __getitem__(self, index):
@@ -37,7 +37,7 @@ class MovingMNISTDataset(Dataset):
 	def __len__(self):
 		return len(self.y)
 
-def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_pairs_per_example=1, \
+def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_pairs_per_example=5, \
 						num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
 
 	filename_without_ext, ext = os.path.splitext(filename)
@@ -48,12 +48,12 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 
 	if not force and os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
 		logging.info('Found all data sets on disk.')
-		data_loaders = []
+		dataloaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Loading {} data set...'.format(dataset_type))
 			dataset = load_object(data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
-			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
-			data_loaders.append(data_loader)
+			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
+			dataloaders.append(dataloader)
 			logging.info('Done.')
 
 	else:
@@ -87,7 +87,7 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
 		differences_dict = get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
 
-		data_loaders = []
+		dataloaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Generating {} data set...'.format(dataset_type))
 			stacked_img_pairs, target_buckets = np.array([]), np.array([])
@@ -109,10 +109,10 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			logging.info('Done.')
 
-			data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-			data_loaders.append(data_loader)
+			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+			dataloaders.append(dataloader)
 
-	return data_loaders
+	return dataloaders
 
 def load_data(project_dir, data_dir, filename):
 	filename = os.path.join(project_dir, data_dir, filename)
