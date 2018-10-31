@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 
 def train(embedding_network, classification_network, dataloader, criterion, optimizer, device, epoch):
-	loss_train = 0.
+	loss_hist = []
 	for batch_idx, (x1, x2, y, differences, frame_numbers) in enumerate(dataloader):
 		x1, x2, y = x1.to(device).float(), x2.to(device).float(), y.to(device).long()
 		embedding_network.train()
@@ -33,7 +33,8 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
 		optimizer.step()
 
 		# Accurately compute loss, because of different batch size
-		loss_train += loss.item() * len(x1) / len(dataloader.dataset)
+		loss_train = loss.item() * len(x1) / len(dataloader.dataset)
+		loss_hist.append(loss_train)
 
 		if (batch_idx+1) % (len(dataloader.dataset)//(5*y.shape[0])) == 0:
 			logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -41,12 +42,12 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
 				100. * (batch_idx+1) / len(dataloader), loss.item()))
 
 	optimizer.zero_grad()
-	return loss_train
+	return loss_hist
 
 def test(embedding_network, classification_network, dataloader, criterion, device):
 	embedding_network.eval()
 	classification_network.eval()
-	loss_test = 0.
+	loss_hist = []
 	y_hist = []
 	output_hist = []
 	with torch.no_grad():
@@ -58,11 +59,12 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 			loss = criterion(classification_output, y)
 
 			# Accurately compute loss, because of different batch size
-			loss_test += loss.item() / len(dataloader.dataset)
+			loss_test = loss.item() / len(dataloader.dataset)
+			loss_hist.append(loss_test)
 
 			output_hist.append(classification_output)
 			y_hist.append(y)
-	return loss_test, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
+	return loss_hist, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
 
 def accuracy(embedding_network, classification_network, dataloader, criterion, device):
 	_, y_predicted, y_true = test(
@@ -181,8 +183,6 @@ def load_checkpoint(embedding_network, classification_network, optimizer, checkp
 		train_accuracy_history = state_dict['train_accuracy_history']
 		val_accuracy_history = state_dict['val_accuracy_history']
 
-		embedding_network = embedding_network
-		classification_network = classification_network
 		for state in optimizer.state.values():
 			for k, v in state.items():
 				if isinstance(v, torch.Tensor):
