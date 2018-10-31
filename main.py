@@ -125,7 +125,7 @@ def main():
 
 	for epoch in range(start_epoch+1, N_EPOCHS+start_epoch+1):
 		try:
-			train_loss = train(
+			train_losses = train(
 				embedding_network=embedding_network,
 				classification_network=classification_network,
 				criterion=criterion_train,
@@ -135,7 +135,7 @@ def main():
 				epoch=epoch
 			)
 
-			val_loss, val_pred, val_true = test(
+			val_losses, val_pred, val_true = test(
 				embedding_network=embedding_network,
 				classification_network=classification_network,
 				dataloader=val_loader,
@@ -145,8 +145,8 @@ def main():
 
 			accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
 			accuracy_val = accuracy(embedding_network, classification_network, val_loader, criterion_test, DEVICE)
-			train_loss_history.append(train_loss)
-			val_loss_history.append(val_loss)
+			train_loss_history.extend(train_losses)
+			val_loss_history.extend(val_losses)
 			train_accuracy_history.append(accuracy_train)
 			val_accuracy_history.append(accuracy_val)
 
