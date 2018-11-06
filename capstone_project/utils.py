@@ -156,7 +156,10 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
 	}
 
 	state_dict_name = 'state_dict_{}_{}_{}_{}.pkl'.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, epoch)
-	torch.save(state_dict, os.path.join(project_dir, checkpoints_dir, state_dict_name))
+	state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
+	logging.info('Saving checkpoint "{}"...'.format(state_dict_path))
+	torch.save(state_dict, state_dict_path)
+	logging.info('Done.')
 
 def load_checkpoint(embedding_network, classification_network, optimizer, checkpoint_file, project_dir, checkpoints_dir, device):
 	# Note: Input model & optimizer should be pre-defined. This routine only updates their states.

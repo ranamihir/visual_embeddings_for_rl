@@ -78,7 +78,9 @@ def main():
 
 	make_dirs(PROJECT_DIR, [CHECKPOINTS_DIR, PLOTS_DIR, LOGGING_DIR]) # Create all required directories if not present
 	setup_logging(PROJECT_DIR, LOGGING_DIR) # Setup configuration for logging
-	print_config(globals().copy()) # Print all global variables defined above
+
+	global_vars = globals().copy()
+	print_config(global_vars) # Print all global variables defined above
 
 	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
 																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, \
@@ -159,6 +161,7 @@ def main():
 
 	# Save the model checkpoints
 	logging.info('Dumping model and results...')
+	print_config(global_vars) # Print all global variables before saving checkpointing
 	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
 					train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, \
 					NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL)
