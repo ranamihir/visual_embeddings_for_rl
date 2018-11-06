@@ -39,6 +39,8 @@ parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_fra
 					type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, \
 					type=int, default=5)
+parser.add_argument('--num-channels', metavar='NUM_CHANNELS', dest='num_channels', help='number of color channels in image', \
+					required=False, type=int, default=1)
 parser.add_argument('--use-pool', action='store_true', help='use pooling instead of strided convolutions')
 parser.add_argument('--use-res', action='store_true', help='use residual layers')
 parser.add_argument('--force', action='store_true', help='overwrites all existing data')
@@ -71,6 +73,7 @@ if args.device_id and 'cuda' in DEVICE:
 
 NUM_FRAMES_IN_STACK = args.num_frames         # number of (total) frames to concatenate for each video
 NUM_PAIRS_PER_EXAMPLE = args.num_pairs        # number of pairs to generate for given video and time difference
+NUM_CHANNELS = args.num_channels  			  # number of color channels in any image
 TIME_BUCKETS = [[0], [1], [2], [3,4], range(5,11,1)]
 
 def main():
@@ -88,7 +91,7 @@ def main():
 
 	# Network hyperparameters
 	img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
-	in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK, 1024
+	in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 1024
 	embedding_hidden_size, classification_hidden_size = 1024, 1024
 	num_outputs = len(TIME_BUCKETS)
 
