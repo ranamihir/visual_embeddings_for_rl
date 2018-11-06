@@ -58,10 +58,10 @@ def split_and_dump_data(data):
 		'test': test_data
 	}
 
-	np.save(open(os.path.join(PROJECT_DIR, DATA_DIR, 'moving_bars_{}_{}.npy'.format(SEQ_LEN, IMG_DIM)), 'wb'), data.swapaxes(0,1))
+	np.save(open(os.path.join(PROJECT_DIR, DATA_DIR, 'moving_bars_{}_{}.npy'.format(SEQ_LEN, IMG_DIM)), 'wb'), data)
 	for key in data_dict:
 		np.save(open(os.path.join(PROJECT_DIR, DATA_DIR, 'moving_bars_{}_{}_{}.npy'.format(SEQ_LEN, IMG_DIM, key)), 'wb'), \
-				data_dict[key].swapaxes(0,1))
+				data_dict[key])
 
 def main():
 	data = generate_data()

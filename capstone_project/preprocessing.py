@@ -117,7 +117,6 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 def load_data(project_dir, data_dir, filename):
 	filename = os.path.join(project_dir, data_dir, filename)
 	data = np.load(filename)
-	data = data.swapaxes(0,1)
 	return data
 
 def split_data(data, val_size, test_size, project_dir, data_dir):
