@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from capstone_project.preprocessing import generate_all_dataloaders, generate_dataloader
+from capstone_project.preprocessing import generate_all_offline_dataloaders, generate_online_dataloader
 from capstone_project.models.embedding_network import EmbeddingNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
 from capstone_project.utils import *
@@ -94,15 +94,15 @@ def main():
 	print_config(global_vars) # Print all global variables defined above
 
 	if OFFLINE:
-		train_loader, val_loader, test_loader = generate_all_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
+		train_loader, val_loader, test_loader = generate_all_offline_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
 																	BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, \
 																	DATA_EXT, args.force)
 	else:
-		train_loader, transforms = generate_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TRAIN, 'train', \
+		train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TRAIN, 'train', \
 										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, None)
-		val_loader = generate_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_VAL, 'val', \
+		val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_VAL, 'val', \
 										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
-		test_loader = generate_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TEST, 'test', \
+		test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TEST, 'test', \
 										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
 
 	# Network hyperparameters

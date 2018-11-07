@@ -191,8 +191,8 @@ class AtariDataset(Dataset):
 		return torch.from_numpy(image_pair), torch.from_numpy(bucket), \
 			torch.from_numpy(np.array(difference)), torch.from_numpy(image_pair_idxs)
 
-def generate_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, time_buckets, \
-						batch_size, num_frames_in_stack=2, ext='.npy', transforms=None):
+def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, \
+							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', transforms=None):
 	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
 
 	if 'pong' in dataset:
@@ -249,7 +249,7 @@ class OfflineMovingMNISTDataset(Dataset):
 	def __len__(self):
 		return len(self.y)
 
-def generate_all_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, \
+def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, \
 						num_pairs_per_example=5, num_frames_in_stack=2, ext='.npy', force=False):
 
 	data_path = os.path.join(project_dir, data_dir, '{}_{}_{}_{}.pkl')
