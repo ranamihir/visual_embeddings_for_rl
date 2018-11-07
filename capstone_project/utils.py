@@ -47,7 +47,8 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
 def test(embedding_network, classification_network, dataloader, criterion, device):
 	embedding_network.eval()
 	classification_network.eval()
-	loss_hist = []
+
+	loss_test = 0.
 	y_hist = []
 	output_hist = []
 	with torch.no_grad():
@@ -59,12 +60,11 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 			loss = criterion(classification_output, y)
 
 			# Accurately compute loss, because of different batch size
-			loss_test = loss.item() / len(dataloader.dataset)
-			loss_hist.append(loss_test)
+			loss_test += loss.item() / len(dataloader.dataset)
 
 			output_hist.append(classification_output)
 			y_hist.append(y)
-	return loss_hist, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
+	return loss_test, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
 
 def accuracy(embedding_network, classification_network, dataloader, criterion, device):
 	_, y_predicted, y_true = test(

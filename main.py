@@ -137,7 +137,7 @@ def main():
 				epoch=epoch
 			)
 
-			val_losses, val_pred, val_true = test(
+			val_loss, val_pred, val_true = test(
 				embedding_network=embedding_network,
 				classification_network=classification_network,
 				dataloader=val_loader,
@@ -148,11 +148,11 @@ def main():
 			accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
 			accuracy_val = accuracy(embedding_network, classification_network, val_loader, criterion_test, DEVICE)
 			train_loss_history.extend(train_losses)
-			val_loss_history.extend(val_losses)
+			val_loss_history.append(val_loss)
 			train_accuracy_history.append(accuracy_train)
 			val_accuracy_history.append(accuracy_val)
 
-			logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, train_loss, accuracy_train))
+			logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, np.sum(train_losses), accuracy_train))
 			logging.info('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
 		except KeyboardInterrupt:
 			logging.info('Keyboard Interrupted!')
@@ -164,24 +164,25 @@ def main():
 	print_config(global_vars) # Print all global variables before saving checkpointing
 	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
 					train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, \
-					NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL)
+					NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL or NGPU)
 	logging.info('Done.')
 
 	if len(train_loss_history):
 		logging.info('Saving and plotting loss and accuracy histories...')
-		loss_history_df = pd.DataFrame({
-			'train': train_loss_history,
-			'test': val_loss_history,
-		})
-		plot = loss_history_df.plot(alpha=0.5, figsize=(10, 8), title='Loss vs. Iterations')
-		save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'loss_vs_iterations.png')
+		fig = plt.figure(figsize=(10,8))
+		plt.plot(train_loss_history, alpha=0.5, color='blue', label='train')
+		xticks = [epoch*len(train_loader) for epoch in range(1, len(val_loss_history)+1)]
+		plt.plot(xticks, val_loss_history, alpha=0.5, color='orange', label='test')
+		plt.legend()
+		plt.title('Loss vs. Iterations')
+		save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
 
-		accuracy_history_df = pd.DataFrame({
-			'train': train_accuracy_history,
-			'test': val_accuracy_history,
-		})
-		plot = accuracy_history_df.plot(alpha=0.5, figsize=(10, 8), title='Accuracies vs. Iterations')
-		save_plot(PROJECT_DIR, PLOTS_DIR, plot.get_figure(), 'accuracies_vs_iterations.png')
+		fig = plt.figure(figsize=(10,8))
+		plt.plot(train_accuracy_history, alpha=0.5, color='blue', label='train')
+		plt.plot(val_accuracy_history, alpha=0.5, color='orange', label='test')
+		plt.legend()
+		plt.title('Accuracy vs. Iterations')
+		save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_iterations.png')
 		logging.info('Done.')
 
 if __name__ == '__main__':
