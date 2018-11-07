@@ -194,7 +194,6 @@ class AtariDataset(Dataset):
 def generate_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, time_buckets, \
 						batch_size, num_frames_in_stack=2, ext='.npy', transforms=None):
 	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
-	# data = np.random.randn(1, 1000, 4, 84, 84)
 
 	if 'pong' in dataset:
 		IS_STACKED_DATA = 1
