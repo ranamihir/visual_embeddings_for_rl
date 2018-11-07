@@ -82,7 +82,7 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 		    transforms.Normalize((mean,)*num_frames_in_stack, (std,)*num_frames_in_stack)
 		])
 
-		imshow(data_dict['train'], mean, std, project_dir, plots_dir)
+		imshow(data_dict['train'], mean, std, project_dir, plots_dir, filename_without_ext)
 
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
 		differences_dict = get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
@@ -109,7 +109,8 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			logging.info('Done.')
 
-			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+			shuffle = True if dataset_type == 'train' else False
+			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=2)
 			dataloaders.append(dataloader)
 
 	return dataloaders

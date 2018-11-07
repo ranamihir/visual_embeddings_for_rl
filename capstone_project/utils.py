@@ -47,7 +47,8 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
 def test(embedding_network, classification_network, dataloader, criterion, device):
 	embedding_network.eval()
 	classification_network.eval()
-	loss_hist = []
+
+	loss_test = 0.
 	y_hist = []
 	output_hist = []
 	with torch.no_grad():
@@ -59,12 +60,11 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 			loss = criterion(classification_output, y)
 
 			# Accurately compute loss, because of different batch size
-			loss_test = loss.item() / len(dataloader.dataset)
-			loss_hist.append(loss_test)
+			loss_test += loss.item() / len(dataloader.dataset)
 
 			output_hist.append(classification_output)
 			y_hist.append(y)
-	return loss_hist, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
+	return loss_test, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
 
 def accuracy(embedding_network, classification_network, dataloader, criterion, device):
 	_, y_predicted, y_true = test(
@@ -78,8 +78,8 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
 	y_predicted = y_predicted.max(1)[1]
 	return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
 
-def imshow(data, mean, std, project_dir, plots_dir):
-	logging.info('Plotting sample data and saving to "data_sample.png"...')
+def imshow(data, mean, std, project_dir, plots_dir, dataset):
+	logging.info('Plotting sample data and saving to "{}_sample.png"...'.format(dataset))
 	image_dim = data.shape[-1]
 	images = data[np.random.RandomState(0).choice(len(data), size=1)]
 	images = torch.from_numpy(images)
@@ -91,7 +91,7 @@ def imshow(data, mean, std, project_dir, plots_dir):
 	fig = plt.figure(figsize=(30, 10))
 	plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
 	plt.tight_layout()
-	save_plot(project_dir, plots_dir, fig, 'data_sample.png')
+	save_plot(project_dir, plots_dir, fig, '{}_sample.png'.format(dataset))
 	logging.info('Done.')
 
 def print_config(vars_dict):

@@ -58,7 +58,7 @@ class EmbeddingNetwork(nn.Module):
 			self.residual_layers = self._make_layer(block, 64, 64, num_blocks)
 
 		# Automatically get dimension of FC layer by using dummy input
-		fc1_input_size = self._get_fc_input_size()
+		fc1_input_size, _ = self._get_fc_input_size()
 
 		# Fully connected layers
 		self.fc1 = nn.Linear(fc1_input_size, hidden_size)
@@ -120,6 +120,12 @@ class EmbeddingNetwork(nn.Module):
 				nn.init.uniform_(m.bias)
 
 	def _get_fc_input_size(self):
+		'''
+		Returns:
+			- input size of FC1 layer
+			- tuple of shape (num_channels, height, width)
+			  for final features before FC1 (useful for decoder)
+		'''
 		layers = nn.Sequential(self.conv1,
 							self.bn1,
 							self.relu,
@@ -151,4 +157,4 @@ class EmbeddingNetwork(nn.Module):
 
 		logging.info('Input hidden size of FC1 in Embedding Network: {}'.format(fc_size))
 
-		return fc_size
+		return fc_size, dummy_output.squeeze(0).shape
