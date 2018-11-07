@@ -78,7 +78,9 @@ def main():
 
 	make_dirs(PROJECT_DIR, [CHECKPOINTS_DIR, PLOTS_DIR, LOGGING_DIR]) # Create all required directories if not present
 	setup_logging(PROJECT_DIR, LOGGING_DIR) # Setup configuration for logging
-	print_config(globals().copy()) # Print all global variables defined above
+
+	global_vars = globals().copy()
+	print_config(global_vars) # Print all global variables defined above
 
 	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
 																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, \
@@ -125,7 +127,7 @@ def main():
 
 	for epoch in range(start_epoch+1, N_EPOCHS+start_epoch+1):
 		try:
-			train_loss = train(
+			train_losses = train(
 				embedding_network=embedding_network,
 				classification_network=classification_network,
 				criterion=criterion_train,
@@ -135,7 +137,7 @@ def main():
 				epoch=epoch
 			)
 
-			val_loss, val_pred, val_true = test(
+			val_losses, val_pred, val_true = test(
 				embedding_network=embedding_network,
 				classification_network=classification_network,
 				dataloader=val_loader,
@@ -145,8 +147,8 @@ def main():
 
 			accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
 			accuracy_val = accuracy(embedding_network, classification_network, val_loader, criterion_test, DEVICE)
-			train_loss_history.append(train_loss)
-			val_loss_history.append(val_loss)
+			train_loss_history.extend(train_losses)
+			val_loss_history.extend(val_losses)
 			train_accuracy_history.append(accuracy_train)
 			val_accuracy_history.append(accuracy_val)
 
@@ -159,6 +161,7 @@ def main():
 
 	# Save the model checkpoints
 	logging.info('Dumping model and results...')
+	print_config(global_vars) # Print all global variables before saving checkpointing
 	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
 					train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, \
 					NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL)
