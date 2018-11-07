@@ -5,6 +5,7 @@ import logging
 import time
 import sys
 import pickle
+from itertools import islice
 from pprint import pformat
 
 import torch
@@ -15,9 +16,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def train(embedding_network, classification_network, dataloader, criterion, optimizer, device, epoch):
+def train(embedding_network, classification_network, dataloader, criterion, optimizer, device, epoch, offline=False):
 	loss_hist = []
-	for batch_idx, (x1, x2, y, differences, frame_numbers) in enumerate(dataloader):
+	dataloader_iterator = enumerate(dataloader) if offline else enumerate(islice(dataloader, len(dataloader)))
+	for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
 		x1, x2, y = x1.to(device).float(), x2.to(device).float(), y.to(device).long()
 		embedding_network.train()
 		classification_network.train()
@@ -44,7 +46,7 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
 	optimizer.zero_grad()
 	return loss_hist
 
-def test(embedding_network, classification_network, dataloader, criterion, device):
+def test(embedding_network, classification_network, dataloader, criterion, device, offline=False):
 	embedding_network.eval()
 	classification_network.eval()
 
@@ -52,7 +54,8 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 	y_hist = []
 	output_hist = []
 	with torch.no_grad():
-		for batch_idx, (x1, x2, y, differences, frame_numbers) in enumerate(dataloader):
+		dataloader_iterator = enumerate(dataloader) if offline else enumerate(islice(dataloader, len(dataloader)))
+		for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
 			x1, x2, y = x1.to(device).float(), x2.to(device).float(), y.to(device).long()
 			embedding_output1 = embedding_network(x1)
 			embedding_output2 = embedding_network(x2)
@@ -64,6 +67,7 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
 
 			output_hist.append(classification_output)
 			y_hist.append(y)
+
 	return loss_test, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
 
 def accuracy(embedding_network, classification_network, dataloader, criterion, device):

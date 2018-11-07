@@ -6,7 +6,6 @@ import logging
 
 from sklearn.model_selection import train_test_split
 import torch
-from torch.autograd import Variable
 from torchvision import transforms
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
@@ -15,6 +14,220 @@ from capstone_project.utils import imshow, save_object, load_object
 
 
 class MovingMNISTDataset(Dataset):
+	def __init__(self, data, time_buckets, num_frames_in_stack=2, size=300000, transforms=None):
+		self.data = data
+		self.size = size
+		self.num_frames_in_stack = num_frames_in_stack
+		self.time_buckets_dict = self._get_time_buckets_dict(time_buckets)
+		self._check_data()
+		self.differences_dict = self._get_frame_differences_dict()
+		self.transforms = transforms
+
+	def __getitem__(self, index):
+		video_idx = np.random.choice(len(self.data))
+		difference = np.random.choice(list(self.time_buckets_dict.keys()))
+
+		(x1, x2), y, difference, (frame1, frame2) = self._get_sample_at_difference(video_idx, difference)
+
+		if self.transforms:
+			x1 = self.transforms(x1)
+			x2 = self.transforms(x2)
+
+		return x1, x2, y, difference, (frame1, frame2)
+
+	def __len__(self):
+		return self.size
+
+	def _check_data(self):
+		sequence_length = self.data.shape[1]
+		max_frame_diff = max(self.time_buckets_dict.keys())
+		assert max_frame_diff <= sequence_length-self.num_frames_in_stack, \
+			'Cannot have difference of {} when sequence length is {} and number of \
+			stacked frames are {}'.format(max_frame_diff, sequence_length, self.num_frames_in_stack)
+
+	def _get_time_buckets_dict(self, time_buckets):
+		'''
+		Returns a dict, with the time diff
+		as its key and the target class (0-indexed) for it as its value
+		'''
+		logging.info('Getting time buckets dictionary...')
+		bucket_idx = 0
+		buckets_dict = {}
+		for bucket in time_buckets:
+			for time in bucket:
+				buckets_dict[time] = bucket_idx
+			bucket_idx += 1
+		logging.info('Done.')
+		return buckets_dict
+
+	def _get_frame_differences_dict(self):
+		'''
+		Returns a dict with the key as the time difference between the frames
+		and the value as a list of tuples (start_frame, end_frame) containing
+		all the pair of frames with that diff in time
+		'''
+		logging.info('Getting frame differences dictionary...')
+		sequence_length = self.data.shape[1]
+		max_frame_diff = max(self.time_buckets_dict.keys())
+
+		differences_dict = {}
+		differences = range(max_frame_diff+1)
+		for diff in differences:
+			start_frame = self.num_frames_in_stack-1
+			end_frame = start_frame+diff
+			while end_frame <= sequence_length-1:
+				differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
+				start_frame += 1
+				end_frame += 1
+		logging.info('Done.')
+		return differences_dict
+
+	def _get_sample_at_difference(self, video_idx, difference):
+		'''
+		Returns samples by selecting the list of tuples for the associated time difference,
+		sampling the num of pairs per video example, and finally returning the (stacked) image pairs,
+		their associated buckets (classes), frame difference, and last frame numbers for each pair (tuple)
+		'''
+		video = self.data[video_idx]
+		candidates = self.differences_dict[difference]
+		pair_idx = np.random.choice(len(candidates))
+		image1_last_frame, image2_last_frame = candidates[pair_idx]
+
+		image1_frames = list(range(image1_last_frame-self.num_frames_in_stack+1, image1_last_frame+1))
+		image2_frames = list(range(image2_last_frame-self.num_frames_in_stack+1, image2_last_frame+1))
+		image_pair = np.array([video[image1_frames], video[image2_frames]])
+
+		bucket = np.array(self.time_buckets_dict[difference])
+
+		frame_numbers = np.array([image1_last_frame, image2_last_frame])
+
+		return torch.from_numpy(image_pair), torch.from_numpy(bucket), \
+			torch.from_numpy(np.array(difference)), torch.from_numpy(frame_numbers)
+
+
+class AtariDataset(Dataset):
+	def __init__(self, data, time_buckets, num_frames_in_stack=4, size=300000, transforms=None):
+		self.data = data
+		self.size = size
+		self.num_frames_in_stack = num_frames_in_stack
+		self.time_buckets_dict = self._get_time_buckets_dict(time_buckets)
+		self._check_data()
+		self.differences_dict = self._get_frame_differences_dict()
+		self.transforms = transforms
+
+	def __getitem__(self, index):
+		video_idx = np.random.choice(len(self.data))
+		difference = np.random.choice(list(self.time_buckets_dict.keys()))
+
+		(x1, x2), y, difference, (frame1, frame2) = self._get_sample_at_difference(video_idx, difference)
+
+		if self.transforms:
+			x1 = self.transforms(x1)
+			x2 = self.transforms(x2)
+
+		return x1, x2, y, difference, (frame1, frame2)
+
+	def __len__(self):
+		return self.size
+
+	def _check_data(self):
+		sequence_length = self.data.shape[1]
+		max_frame_diff = max(self.time_buckets_dict.keys())
+		assert max_frame_diff <= sequence_length-self.num_frames_in_stack, \
+			'Cannot have difference of {} when sequence length is {} and number of \
+			stacked frames are {}'.format(max_frame_diff, sequence_length, self.num_frames_in_stack)
+
+	def _get_time_buckets_dict(self, time_buckets):
+		'''
+		Returns a dict, with the time diff
+		as its key and the target class (0-indexed) for it as its value
+		'''
+		logging.info('Getting time buckets dictionary...')
+		bucket_idx = 0
+		buckets_dict = {}
+		for bucket in time_buckets:
+			for time in bucket:
+				buckets_dict[time] = bucket_idx
+			bucket_idx += 1
+		logging.info('Done.')
+		return buckets_dict
+
+	def _get_frame_differences_dict(self):
+		'''
+		Returns a dict with the key as the time difference between the frames
+		and the value as a list of tuples (start_frame, end_frame) containing
+		all the pair of frames with that diff in time
+		'''
+		logging.info('Getting frame differences dictionary...')
+		sequence_length = self.data.shape[1]
+		max_frame_diff = max(self.time_buckets_dict.keys())
+
+		differences_dict = {}
+		differences = range(max_frame_diff+1)
+		for diff in differences:
+			start_frame, end_frame = 0, diff
+			while end_frame <= sequence_length-1:
+				differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
+				start_frame += 1
+				end_frame += 1
+		logging.info('Done.')
+		return differences_dict
+
+	def _get_sample_at_difference(self, video_idx, difference):
+		'''
+		Returns samples by selecting the list of tuples for the associated time difference,
+		sampling the num of pairs per video example, and finally returning the (stacked) image pairs,
+		their associated buckets (classes), frame difference, and last frame numbers for each pair (tuple)
+		'''
+		video = self.data[video_idx]
+		candidates = self.differences_dict[difference]
+		pair_idx = np.random.choice(len(candidates))
+		image1_frame_idx, image2_frame_idx = candidates[pair_idx]
+		image_pair_idxs = np.array([image1_frame_idx, image2_frame_idx])
+		image_pair = np.array([video[image1_frame_idx], video[image2_frame_idx]])
+
+		bucket = np.array(self.time_buckets_dict[difference])
+
+		return torch.from_numpy(image_pair), torch.from_numpy(bucket), \
+			torch.from_numpy(np.array(difference)), torch.from_numpy(image_pair_idxs)
+
+def generate_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, time_buckets, \
+						batch_size, num_frames_in_stack=2, ext='.npy', transforms=None):
+	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
+	# data = np.random.randn(1, 1000, 4, 84, 84)
+
+	if 'pong' in dataset:
+		IS_STACKED_DATA = 1
+		assert num_frames_in_stack == data.shape[-3], \
+			'NUM_FRAMES_IN_STACK (={}) must match number of stacked images in stacked dataset (={})!'\
+			.format(num_frames_in_stack, data.shape[-3])
+	elif 'mnist' in dataset or 'moving_bars' in dataset:
+		IS_STACKED_DATA = 0
+	else:
+		raise ValueError('Unknown dataset name "{}" passed!'.format(dataset))
+
+	if dataset_type == 'train':
+		transforms, mean, std = get_normalize_transform(data, num_frames_in_stack)
+		imshow(data, mean, std, project_dir, plots_dir, dataset)
+
+	logging.info('Generating {} data loader...'.format(dataset_type))
+	if IS_STACKED_DATA:
+		dataset = AtariDataset(data, time_buckets, num_frames_in_stack, \
+							dataset_size, transforms=transforms)
+	else:
+		dataset = MovingMNISTDataset(data, time_buckets, num_frames_in_stack, \
+									dataset_size, transforms=transforms)
+
+	shuffle = 1 if dataset_type == 'train' else False
+	dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=8)
+	logging.info('Done.')
+
+	if dataset_type == 'train':
+		return dataloader, transforms
+	return dataloader
+
+
+class OfflineMovingMNISTDataset(Dataset):
 	def __init__(self, X, y, differences, frame_numbers, transforms=None):
 		self.X = X
 		self.y = y
@@ -37,52 +250,41 @@ class MovingMNISTDataset(Dataset):
 	def __len__(self):
 		return len(self.y)
 
-def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, num_pairs_per_example=5, \
-						num_frames_in_stack=2, val_size=0.2, test_size=0.2, force=False):
+def generate_all_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, \
+						num_pairs_per_example=5, num_frames_in_stack=2, ext='.npy', force=False):
 
-	filename_without_ext, ext = os.path.splitext(filename)
 	data_path = os.path.join(project_dir, data_dir, '{}_{}_{}_{}.pkl')
-	train_path = data_path.format(filename_without_ext, 'train', num_frames_in_stack, num_pairs_per_example)
-	val_path = data_path.format(filename_without_ext, 'val', num_frames_in_stack, num_pairs_per_example)
-	test_path = data_path.format(filename_without_ext, 'test', num_frames_in_stack, num_pairs_per_example)
+	train_path = data_path.format(filename, 'train', num_frames_in_stack, num_pairs_per_example)
+	val_path = data_path.format(filename, 'val', num_frames_in_stack, num_pairs_per_example)
+	test_path = data_path.format(filename, 'test', num_frames_in_stack, num_pairs_per_example)
 
 	if not force and os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
 		logging.info('Found all data sets on disk.')
 		dataloaders = []
 		for dataset_type in ['train', 'val', 'test']:
 			logging.info('Loading {} data set...'.format(dataset_type))
-			dataset = load_object(data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
-			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True if dataset_type == 'train' else False, num_workers=2)
+			dataset = load_object(data_path.format(filename, dataset_type, num_frames_in_stack, num_pairs_per_example))
+			shuffle = 1 if dataset_type == 'train' else False
+			dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=2)
 			dataloaders.append(dataloader)
 			logging.info('Done.')
 
 	else:
 		logging.info('Did not find at least one data set on disk. Creating all 3...')
 
-		logging.info('Loading "{}"...'.format(filename))
-		data = load_data(project_dir, data_dir, filename)
-		logging.info('Done.')
+		data_dict = {}
+		for dataset_type in ['train', 'val', 'test']:
+			data_dict[dataset_type] = load_data(project_dir, data_dir, filename, dataset_type, ext)
 
-		sequence_length = data.shape[1]
+		sequence_length = data_dict['train'].shape[1]
 		max_frame_diff = np.hstack([bucket for bucket in time_buckets]).max()
 		assert max_frame_diff <= sequence_length-num_frames_in_stack, \
 			'Cannot have difference of {} when sequence length is {} and number of \
 			stacked frames are {}'.format(max_frame_diff, sequence_length, num_frames_in_stack)
 
-		logging.info('Splitting data set into train, val, and test sets...')
-		data_dict = split_data(data, val_size, test_size, project_dir, data_dir)
-		data = None # Free memory
-		logging.info('Done.')
-
 		# Calculate mean, std from train data, and normalize data
-		mean = np.mean(data_dict['train'])
-		std = np.std(data_dict['train'])
-		data_dict['train'] = (data_dict['train'] - mean)/std
-		normalize = transforms.Compose([
-		    transforms.Normalize((mean,)*num_frames_in_stack, (std,)*num_frames_in_stack)
-		])
-
-		imshow(data_dict['train'], mean, std, project_dir, plots_dir, filename_without_ext)
+		transforms, mean, std = get_normalize_transform(data_dict['train'], num_frames_in_stack)
+		imshow(data_dict['train'], mean, std, project_dir, plots_dir, filename)
 
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
 		differences_dict = get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
@@ -104,9 +306,9 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 
 			stacked_img_pairs, target_buckets = torch.from_numpy(stacked_img_pairs), torch.from_numpy(target_buckets)
 			target_differences, target_frame_numbers = torch.from_numpy(target_differences), torch.from_numpy(target_frame_numbers)
-			dataset = MovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, target_frame_numbers, transforms=normalize)
+			dataset = OfflineMovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, target_frame_numbers, transforms=transforms)
 			logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
-			save_object(dataset, data_path.format(filename_without_ext, dataset_type, num_frames_in_stack, num_pairs_per_example))
+			save_object(dataset, data_path.format(filename, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			logging.info('Done.')
 
 			shuffle = True if dataset_type == 'train' else False
@@ -115,26 +317,29 @@ def generate_dataloaders(project_dir, data_dir, plots_dir, filename, time_bucket
 
 	return dataloaders
 
-def load_data(project_dir, data_dir, filename):
-	filename = os.path.join(project_dir, data_dir, filename)
-	data = np.load(filename)
+def load_data(project_dir, data_dir, filename, dataset_type, ext):
+	filename = '{}_{}{}'.format(filename, dataset_type, ext)
+	logging.info('Loading "{}"...'.format(filename))
+	file_path = os.path.join(project_dir, data_dir, filename)
+
+	if ext == '.npy':
+		data = np.load(file_path)
+	elif ext == '.pkl':
+		data = load_object(file_path)
+	else:
+		raise ValueError('Unknown file extension "{}"!'.format(ext))
+	logging.info('Done.')
 	return data
 
-def split_data(data, val_size, test_size, project_dir, data_dir):
-	num_test = int(np.floor(test_size*len(data)))
-	num_train_val = len(data) - num_test
-	num_val = int(np.floor(num_train_val*val_size/(1 - test_size)))
+def get_normalize_transform(data, num_frames_in_stack):
+	# Calculate mean, std from train data, and normalize
+	mean = np.mean(data)
+	std = np.std(data)
+	normalize = transforms.Compose([
+	    transforms.Normalize((mean,)*num_frames_in_stack, (std,)*num_frames_in_stack)
+	])
+	return normalize, mean, std
 
-	train_data, test_data = train_test_split(data, test_size=num_test)
-	train_data, val_data = train_test_split(train_data, test_size=num_val)
-
-	data_dict = {
-		'train': train_data,
-		'val': val_data,
-		'test': test_data
-	}
-
-	return data_dict
 
 def get_time_buckets_dict(time_buckets):
 	'''

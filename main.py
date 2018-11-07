@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from capstone_project.preprocessing import generate_dataloaders
+from capstone_project.preprocessing import generate_all_dataloaders, generate_dataloader
 from capstone_project.models.embedding_network import EmbeddingNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
 from capstone_project.utils import *
@@ -22,9 +22,13 @@ from capstone_project.utils import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', help='path to project directory', required=False, default='.')
-parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
+parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False, \
+					default='mnist_test_test_seq')
+parser.add_argument('--data-ext', metavar='DATA_EXT', dest='data_ext', help='extension of dataset file in data directory', required=False, \
+					default='.npy')
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
 					required=False, default='data')
+parser.add_argument('--offline', action='store_true', help='use offline preprocessing of data loader')
 parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', help='path to checkpoints directory', \
 					required=False, default='checkpoints')
 parser.add_argument('--load-ckpt', metavar='LOAD_CHECKPOINT', dest='load_ckpt', help='name of checkpoint file to load', required=False)
@@ -35,6 +39,8 @@ parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', help='
 parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs to use (0,1,...,ngpu-1)', required=False, type=int)
 parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
+parser.add_argument('--num-train', metavar='NUM_TRAIN', dest='num_train', help='number of training examples', required=False, \
+					type=int, default=300000)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, \
 					type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, \
@@ -49,9 +55,14 @@ args = parser.parse_args()
 PROJECT_DIR = args.project_dir
 DATA_DIR,  PLOTS_DIR, LOGGING_DIR = args.data_dir, 'plots', 'logs'
 CHECKPOINTS_DIR, CHECKPOINT_FILE = args.checkpoints_dir, args.load_ckpt
+DATASET, DATA_EXT = args.dataset, args.data_ext
+OFFLINE = args.offline
 
-DATASET = args.dataset if args.dataset else 'mnist_test_seq.npy'
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
+if not OFFLINE:
+	NUM_TRAIN = args.num_train
+	TRAIN_SIZE = 1 - TEST_SIZE - VAL_SIZE
+	NUM_TEST, NUM_VAL = int((TEST_SIZE/TRAIN_SIZE)*NUM_TRAIN), int((VAL_SIZE/TRAIN_SIZE)*NUM_TRAIN)
 
 BATCH_SIZE = args.batch_size    # input batch size for training
 N_EPOCHS = args.epochs          # number of epochs to train
@@ -62,7 +73,7 @@ PARALLEL = args.parallel 		# use all GPUs
 TOTAL_GPUs = torch.cuda.device_count() # Number of total GPUs available
 
 if NGPU:
-	assert TOTAL_GPUs >= NGPU, '{} GPUs not available!'.format(NGPU)
+	assert TOTAL_GPUs >= NGPU, '{} GPUs not available! Only {} GPU(s) available'.format(NGPU, TOTAL_GPUs)
 
 DEVICE = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
 if args.device_id and 'cuda' in DEVICE:
@@ -82,9 +93,17 @@ def main():
 	global_vars = globals().copy()
 	print_config(global_vars) # Print all global variables defined above
 
-	train_loader, val_loader, test_loader = generate_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
-																BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, \
-																VAL_SIZE, TEST_SIZE, force=args.force)
+	if OFFLINE:
+		train_loader, val_loader, test_loader = generate_all_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
+																	BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, \
+																	DATA_EXT, args.force)
+	else:
+		train_loader, transforms = generate_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TRAIN, 'train', \
+										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, None)
+		val_loader = generate_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_VAL, 'val', \
+										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
+		test_loader = generate_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TEST, 'test', \
+										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
 
 	# Network hyperparameters
 	img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
@@ -117,10 +136,10 @@ def main():
 
 	# Check if model is to be parallelized
 	if TOTAL_GPUs > 1 and (NGPU or PARALLEL):
-		DEVICE_IDS = range(TOTAL_GPUs) if PARALLEL else range(NGPU)
-		logging.info('Using {} GPUs...'.format(len(DEVICE_IDS)))
-		embedding_network = nn.DataParallel(embedding_network, device_ids=DEVICE_IDS)
-		classification_network = nn.DataParallel(classification_network, device_ids=DEVICE_IDS)
+		DEVICE_IDs = range(TOTAL_GPUs) if PARALLEL else range(NGPU)
+		logging.info('Using {} GPUs...'.format(len(DEVICE_IDs)))
+		embedding_network = nn.DataParallel(embedding_network, device_ids=DEVICE_IDs)
+		classification_network = nn.DataParallel(classification_network, device_ids=DEVICE_IDs)
 		logging.info('Done.')
 	embedding_network = embedding_network.to(DEVICE)
 	classification_network = classification_network.to(DEVICE)
@@ -134,7 +153,8 @@ def main():
 				dataloader=train_loader,
 				optimizer=optimizer,
 				device=DEVICE,
-				epoch=epoch
+				epoch=epoch,
+				offline=OFFLINE
 			)
 
 			val_loss, val_pred, val_true = test(
@@ -142,7 +162,8 @@ def main():
 				classification_network=classification_network,
 				dataloader=val_loader,
 				criterion=criterion_test,
-				device=DEVICE
+				device=DEVICE,
+				offline=OFFLINE
 			)
 
 			accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
