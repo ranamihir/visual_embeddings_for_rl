@@ -47,7 +47,7 @@ parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pa
 					type=int, default=5)
 parser.add_argument('--use-pool', action='store_true', help='use pooling instead of strided convolutions')
 parser.add_argument('--use-res', action='store_true', help='use residual layers')
-parser.add_argument('--force', action='store_true', help='overwrites all existing data')
+parser.add_argument('--force', action='store_true', help='overwrites all existing dumped data sets (if used with `--offline`)')
 args = parser.parse_args()
 
 
@@ -80,8 +80,10 @@ if args.device_id and 'cuda' in DEVICE:
 	DEVICE_ID = args.device_id
 	torch.cuda.set_device(DEVICE_ID)
 
-NUM_FRAMES_IN_STACK = args.num_frames         # number of (total) frames to concatenate for each video
-NUM_PAIRS_PER_EXAMPLE = args.num_pairs        # number of pairs to generate for given video and time difference
+NUM_FRAMES_IN_STACK = args.num_frames		# number of (total) frames to concatenate for each video
+NUM_PAIRS_PER_EXAMPLE = args.num_pairs      # number of pairs to generate for given video and time difference
+USE_POOL = args.use_pool					# use pooling instead of strided convolutions
+USE_RES = args.use_res						# use residual layers
 TIME_BUCKETS = [[0], [1], [2], [3,4], range(5,11,1)]
 
 def main():
@@ -116,7 +118,7 @@ def main():
 	stop_epoch = N_EPOCHS+start_epoch # Store epoch upto which model is trained (used in case of KeyboardInterrupt)
 
 	logging.info('Creating models...')
-	embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=args.use_pool, use_res=args.use_res)
+	embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
 	classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs)
 	logging.info('Done.')
 
