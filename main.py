@@ -23,7 +23,7 @@ from capstone_project.utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', help='path to project directory', required=False, default='.')
 parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False, \
-					default='mnist_test_test_seq')
+					default='mnist_test_seq')
 parser.add_argument('--data-ext', metavar='DATA_EXT', dest='data_ext', help='extension of dataset file in data directory', required=False, \
 					default='.npy')
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
@@ -40,7 +40,7 @@ parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', help='number of GPUs 
 parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
 parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', required=False, type=float, default=1e-4)
 parser.add_argument('--num-train', metavar='NUM_TRAIN', dest='num_train', help='number of training examples', required=False, \
-					type=int, default=300000)
+					type=int, default=50000)
 parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', help='number of stacked frames', required=False, \
 					type=int, default=2)
 parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', help='number of pairs per video', required=False, \
@@ -94,16 +94,17 @@ def main():
 	print_config(global_vars) # Print all global variables defined above
 
 	if OFFLINE:
-		train_loader, val_loader, test_loader = generate_all_offline_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, TIME_BUCKETS, \
-																	BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, NUM_FRAMES_IN_STACK, \
-																	DATA_EXT, args.force)
+		train_loader, val_loader, test_loader = generate_all_offline_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, \
+																				TIME_BUCKETS, BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
+																				NUM_FRAMES_IN_STACK, DATA_EXT, args.force)
 	else:
-		train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TRAIN, 'train', \
-										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, None)
+		train_loader, transforms, data_max, data_min = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, \
+																				NUM_TRAIN, 'train', TIME_BUCKETS, BATCH_SIZE, \
+																				NUM_FRAMES_IN_STACK, DATA_EXT)
 		val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_VAL, 'val', \
-										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
+										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms, data_max, data_min)
 		test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TEST, 'test', \
-										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
+										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms, data_max, data_min)
 
 	# Network hyperparameters
 	img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
