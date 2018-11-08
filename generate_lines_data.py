@@ -7,7 +7,8 @@ from sklearn.model_selection import train_test_split
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', help='path to project directory', required=False)
+parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', help='path to project directory', \
+					required=False, default='.')
 parser.add_argument('--dataset', metavar='DATASET', dest='dataset', help='name of dataset file in data directory', required=False)
 parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', help='path to data directory (used if different from "data")', \
 					required=False, default='data')
@@ -19,7 +20,7 @@ args = parser.parse_args()
 
 
 # Globals
-PROJECT_DIR = args.project_dir if args.project_dir else '/home/mihir/Desktop/GitHub/nyu/learning_visual_embeddings/'
+PROJECT_DIR = args.project_dir
 DATA_DIR = args.data_dir
 SEQ_LEN = args.seq_len
 IMG_DIM = args.img_dim
