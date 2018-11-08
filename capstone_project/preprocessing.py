@@ -214,8 +214,8 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 		raise ValueError('Unknown dataset name "{}" passed!'.format(dataset))
 
 	if dataset_type == 'train':
-		transforms, mean, std = get_normalize_transform(data, num_frames_in_stack)
-		imshow(data, mean, std, project_dir, plots_dir, dataset)
+		transforms = get_normalize_transform(data)
+		imshow(data, project_dir, plots_dir, dataset)
 
 	logging.info('Generating {} data loader...'.format(dataset_type))
 	if IS_STACKED_DATA:
@@ -290,9 +290,9 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 			'Cannot have difference of {} when sequence length is {} and number of \
 			stacked frames are {}'.format(max_frame_diff, sequence_length, num_frames_in_stack)
 
-		# Calculate mean, std from train data, and normalize data
-		transforms, mean, std = get_normalize_transform(data_dict['train'], num_frames_in_stack)
-		imshow(data_dict['train'], mean, std, project_dir, plots_dir, filename)
+		# Normalize data
+		transforms = get_normalize_transform(data_dict['train'])
+		imshow(data_dict['train'], project_dir, plots_dir, filename)
 
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
 		differences_dict = get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
@@ -346,17 +346,13 @@ def load_data(project_dir, data_dir, filename, dataset_type, ext, \
 		data = 255*(data - data_min)/(data_max-data_min)
 		return data.astype(np.uint8)
 
-def get_normalize_transform(data, num_frames_in_stack):
-	# Calculate mean, std from train data, and normalize
-	mean = np.mean(data)
-	std = np.std(data)
-
+def get_normalize_transform(data):
 	normalize = transforms.Compose([
 		transforms.ToTensor(),
-	    transforms.Normalize((mean,), (std,))
+	    transforms.Normalize((0,), (1,))
 	])
 
-	return normalize, mean, std
+	return normalize
 
 def get_time_buckets_dict(time_buckets):
 	'''
