@@ -50,8 +50,8 @@ class MovingMNISTDataset(Dataset):
 
 	def _get_time_buckets_dict(self, time_buckets):
 		'''
-		Returns a dict, with the time diff
-		as its key and the target class (0-indexed) for it as its value
+		Returns a dict, with the time diff as its key and
+		the target class (0-indexed) for it as its value
 		'''
 		logging.info('Getting time buckets dictionary...')
 		bucket_idx = 0
@@ -67,7 +67,7 @@ class MovingMNISTDataset(Dataset):
 		'''
 		Returns a dict with the key as the time difference between the frames
 		and the value as a list of tuples (start_frame, end_frame) containing
-		all the pair of frames with that diff in time
+		all the pair of frames with that time difference
 		'''
 		logging.info('Getting frame differences dictionary...')
 		sequence_length = self.data.shape[1]
@@ -87,9 +87,10 @@ class MovingMNISTDataset(Dataset):
 
 	def _get_sample_at_difference(self, video_idx, difference):
 		'''
-		Returns samples by selecting the list of tuples for the associated time difference,
-		sampling the num of pairs per video example, and finally returning the (stacked) image pairs,
-		their associated buckets (classes), frame difference, and last frame numbers for each pair (tuple)
+		Samples a video pair for the given time difference, and
+		returns the (stacked) image pairs (tuple), their associated
+		bucket indices(classes), frame difference, and last frame
+		numbers for each pair (tuple)
 		'''
 		video = self.data[video_idx]
 		candidates = self.differences_dict[difference]
@@ -119,15 +120,15 @@ class AtariDataset(Dataset):
 
 	def __getitem__(self, index):
 		video_idx = np.random.choice(len(self.data))
-		difference = np.random.choice(list(self.time_buckets_dict.keys()))
+		y = np.random.choice(list(self.time_buckets_dict.keys()))
 
-		(x1, x2), y, difference, frame_numbers = self._get_sample_at_difference(video_idx, difference)
+		(x1, x2), difference, frame_numbers = self._get_sample_at_difference(video_idx, y)
 
 		if self.transforms:
 			x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
 			x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
 
-		y, difference = torch.from_numpy(y), torch.from_numpy(difference)
+		y, difference = torch.from_numpy(np.array(y)), torch.from_numpy(difference)
 		frame1, frame2 = torch.from_numpy(frame_numbers)
 
 		return x1, x2, y, difference, (frame1, frame2)
@@ -137,24 +138,18 @@ class AtariDataset(Dataset):
 
 	def _check_data(self):
 		sequence_length = self.data.shape[1]
-		max_frame_diff = max(self.time_buckets_dict.keys())
+		max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
 		assert max_frame_diff <= sequence_length-self.num_frames_in_stack, \
 			'Cannot have difference of {} when sequence length is {} and number of \
 			stacked frames are {}'.format(max_frame_diff, sequence_length, self.num_frames_in_stack)
 
 	def _get_time_buckets_dict(self, time_buckets):
 		'''
-		Returns a dict, with the time diff
-		as its key and the target class (0-indexed) for it as its value
+		Returns a dict, with the bucket idx target
+		class (0-indexed) as its key and the time ranges
+		for it as its value
 		'''
-		logging.info('Getting time buckets dictionary...')
-		bucket_idx = 0
-		buckets_dict = {}
-		for bucket in time_buckets:
-			for time in bucket:
-				buckets_dict[time] = bucket_idx
-			bucket_idx += 1
-		logging.info('Done.')
+		buckets_dict = dict(zip(range(len(time_buckets)), time_buckets))
 		return buckets_dict
 
 	def _get_frame_differences_dict(self):
@@ -165,7 +160,7 @@ class AtariDataset(Dataset):
 		'''
 		logging.info('Getting frame differences dictionary...')
 		sequence_length = self.data.shape[1]
-		max_frame_diff = max(self.time_buckets_dict.keys())
+		max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
 
 		differences_dict = {}
 		differences = range(max_frame_diff+1)
@@ -178,22 +173,22 @@ class AtariDataset(Dataset):
 		logging.info('Done.')
 		return differences_dict
 
-	def _get_sample_at_difference(self, video_idx, difference):
+	def _get_sample_at_difference(self, video_idx, bucket_idx):
 		'''
-		Returns samples by selecting the list of tuples for the associated time difference,
-		sampling the num of pairs per video example, and finally returning the (stacked) image pairs,
-		their associated buckets (classes), frame difference, and last frame numbers for each pair (tuple)
+		Sampling a time difference from the associated bucket idx,
+		sampling a video pair at that difference, and finally returning
+		the (stacked) image pairs (tuple), their time difference, and
+		the last frame numbers for each pair (tuple)
 		'''
 		video = self.data[video_idx]
+		difference = np.random.choice(self.time_buckets_dict[bucket_idx])
 		candidates = self.differences_dict[difference]
 		pair_idx = np.random.choice(len(candidates))
 		image1_frame_idx, image2_frame_idx = candidates[pair_idx]
 		image_pair_idxs = np.array([image1_frame_idx, image2_frame_idx])
 		image_pair = np.array([video[image1_frame_idx], video[image2_frame_idx]])
 
-		bucket = np.array(self.time_buckets_dict[difference])
-
-		return image_pair, bucket, np.array(difference), image_pair_idxs
+		return image_pair, np.array(difference), image_pair_idxs
 
 def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, \
 							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', \
