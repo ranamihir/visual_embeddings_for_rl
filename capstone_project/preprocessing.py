@@ -412,12 +412,15 @@ def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_
 	return np.array(img_pairs), np.array(target_buckets), np.array(differences), np.array(frame_numbers)
 
 def split_data(data, val_size, test_size, project_dir, data_dir):
-	num_test = int(np.floor(test_size*len(data)))
-	num_train_val = len(data) - num_test
-	num_val = int(np.floor(num_train_val*val_size/(1 - test_size)))
+	if 0. <= val_size <= 1. and 0. <= test_size <= 1.:
+		num_test = int(np.floor(test_size*len(data)))
+		num_train_val = len(data) - num_test
+		num_val = int(np.floor(num_train_val*val_size/(1 - test_size)))
+	else:
+		num_val, num_test = val_size, test_size
 
-	train_data, test_data = train_test_split(data, test_size=num_test, random_stae=1337)
-	train_data, val_data = train_test_split(train_data, test_size=num_val, random_stae=1337)
+	train_data, test_data = train_test_split(data, test_size=num_test, random_state=1337)
+	train_data, val_data = train_test_split(train_data, test_size=num_val, random_state=1337)
 
 	data_dict = {
 		'train': train_data,
