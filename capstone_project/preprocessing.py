@@ -29,16 +29,13 @@ class MovingMNISTDataset(Dataset):
 
 		(x1, x2), difference, frame_numbers = self._get_sample_at_difference(video_idx, y)
 
-		x1, x2 = torch.from_numpy(x1), torch.from_numpy(x2)
-
 		if self.transforms:
 			x1 = self.transforms(x1)
 			x2 = self.transforms(x2)
 			# x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
 			# x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
 
-		y, difference = torch.from_numpy(np.array(y)), torch.from_numpy(difference)
-		frame1, frame2 = torch.from_numpy(frame_numbers)
+		y = torch.from_numpy(np.array(y))
 
 		return x1, x2, y, difference, (frame1, frame2)
 
@@ -96,13 +93,14 @@ class MovingMNISTDataset(Dataset):
 		pair_idx = np.random.choice(len(candidates))
 		image1_last_frame, image2_last_frame = candidates[pair_idx]
 
-		image1_frames = list(range(image1_last_frame-self.num_frames_in_stack+1, image1_last_frame+1))
-		image2_frames = list(range(image2_last_frame-self.num_frames_in_stack+1, image2_last_frame+1))
+		image1_frames = range(image1_last_frame-self.num_frames_in_stack+1, image1_last_frame+1)
+		image2_frames = range(image2_last_frame-self.num_frames_in_stack+1, image2_last_frame+1)
 		image_pair = np.array([video[image1_frames], video[image2_frames]])
 
 		image_pair_idxs = np.array([image1_last_frame, image2_last_frame])
 
-		return image_pair, np.array(difference), image_pair_idxs
+		return torch.from_numpy(image_pair), torch.from_numpy(np.array(difference)), \
+				torch.from_numpy(image_pair_idxs)
 
 
 class AtariDataset(Dataset):
@@ -120,14 +118,12 @@ class AtariDataset(Dataset):
 		y = np.random.choice(list(self.time_buckets_dict.keys()))
 
 		(x1, x2), difference, frame_numbers = self._get_sample_at_difference(video_idx, y)
-		x1, x2 = torch.from_numpy(x1), torch.from_numpy(x2)
 
 		if self.transforms:
 			x1 = self.transforms(x1)
 			x2 = self.transforms(x2)
 
-		y, difference = torch.from_numpy(np.array(y)), torch.from_numpy(difference)
-		frame1, frame2 = torch.from_numpy(frame_numbers)
+		y = torch.from_numpy(np.array(y))
 
 		return x1, x2, y, difference, (frame1, frame2)
 
@@ -186,13 +182,14 @@ class AtariDataset(Dataset):
 		image_pair_idxs = np.array([image1_frame_idx, image2_frame_idx])
 		image_pair = np.array([video[image1_frame_idx], video[image2_frame_idx]])
 
-		return image_pair, np.array(difference), image_pair_idxs
+		return torch.from_numpy(image_pair), torch.from_numpy(np.array(difference)), \
+				torch.from_numpy(image_pair_idxs)
 
 def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, \
 							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', \
 							transforms=None):
 	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
-	# data, data_max, data_min = np.random.uniform(size=(1, 1000, 4, 84, 84)), 1., 0.
+	# data = np.random.uniform(size=(1, 1000, 4, 84, 84))
 
 	if 'pong' in dataset:
 		IS_STACKED_DATA = 1
@@ -206,7 +203,7 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 
 	if dataset_type == 'train':
 		transforms, mean, std = get_normalize_transform(data, num_frames_in_stack)
-		imshow(data, project_dir, plots_dir, dataset)
+		imshow(data, mean, std, project_dir, plots_dir, dataset)
 
 	logging.info('Generating {} data loader...'.format(dataset_type))
 	if IS_STACKED_DATA:
@@ -242,8 +239,6 @@ class OfflineMovingMNISTDataset(Dataset):
 		if self.transforms:
 			x1 = self.transforms(x1)
 			x2 = self.transforms(x2)
-			# x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
-			# x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
 
 		return x1, x2, y, difference, (frame1, frame2)
 
@@ -273,7 +268,6 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 		logging.info('Did not find at least one data set on disk. Creating all 3...')
 
 		data_dict = {}
-		# data_dict['train'], data_max, data_min = load_data(project_dir, data_dir, filename, 'train', ext)
 		for dataset_type in ['train', 'val', 'test']:
 			data_dict[dataset_type] = load_data(project_dir, data_dir, filename, dataset_type, ext)
 
@@ -285,11 +279,10 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 
 		# Normalize data
 		transforms, mean, std = get_normalize_transform(data_dict['train'], num_frames_in_stack)
-		# transforms = None
 		imshow(data_dict['train'], project_dir, plots_dir, filename)
 
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
-		differences_dict = get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
+		differences_dict = get_candidates_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
 
 		dataloaders = []
 		for dataset_type in ['train', 'val', 'test']:
@@ -304,9 +297,11 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 				stacked_img_pairs = np.vstack((stacked_img_pairs, img_pairs)) if stacked_img_pairs.size else img_pairs
 				target_buckets = np.append(target_buckets, buckets)
 				target_differences = np.append(target_differences, differences)
-				target_frame_numbers = np.vstack((target_frame_numbers, frame_numbers)) if target_frame_numbers.size else frame_numbers
+				target_frame_numbers = np.vstack((target_frame_numbers, frame_numbers)) \
+										if target_frame_numbers.size else frame_numbers
 
-			dataset = OfflineMovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, target_frame_numbers, transforms=transforms)
+			dataset = OfflineMovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, \
+												target_frame_numbers, transforms=transforms)
 			logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
 			save_object(dataset, data_path.format(filename, dataset_type, num_frames_in_stack, num_pairs_per_example))
 			logging.info('Done.')
@@ -317,8 +312,7 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 
 	return dataloaders
 
-def load_data(project_dir, data_dir, filename, dataset_type, ext, \
-			data_max=None, data_min=None):
+def load_data(project_dir, data_dir, filename, dataset_type, ext):
 	filename = '{}_{}{}'.format(filename, dataset_type, ext)
 	logging.info('Loading "{}"...'.format(filename))
 	file_path = os.path.join(project_dir, data_dir, filename)
@@ -337,9 +331,11 @@ def get_normalize_transform(data, num_frames_in_stack):
 	# Calculate mean, std from train data, and normalize
 	mean = np.mean(data)
 	std = np.std(data)
+
 	normalize = transforms.Compose([
 	    transforms.Normalize((mean,)*num_frames_in_stack, (std,)*num_frames_in_stack)
 	])
+
 	return normalize, mean, std
 
 def get_time_buckets_dict(time_buckets):
@@ -357,7 +353,7 @@ def get_time_buckets_dict(time_buckets):
 	logging.info('Done.')
 	return buckets_dict
 
-def get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack):
+def get_candidates_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack):
 	'''
 	Returns a dict with the key as the time difference between the frames
 	and the value as a list of tuples (start_frame, end_frame) containing
@@ -376,7 +372,8 @@ def get_frame_differences_dict(sequence_length, max_frame_diff, num_frames_in_st
 	logging.info('Done.')
 	return differences_dict
 
-def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, num_frames_in_stack, time_buckets_dict):
+def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_example, \
+							num_frames_in_stack, time_buckets_dict):
 	'''
 	Returns samples by selecting the list of tuples for the associated time difference,
 	sampling the num of pairs per video example, and finally returning the (stacked) image pairs,
@@ -389,8 +386,8 @@ def get_samples_at_difference(data, difference, differences_dict, num_pairs_per_
 	for row in data:
 		for idx_pair in idx_pairs:
 			target1_last_frame, target2_last_frame = candidates[idx_pair]
-			target1_frames = list(range(target1_last_frame-num_frames_in_stack+1, target1_last_frame+1))
-			target2_frames = list(range(target2_last_frame-num_frames_in_stack+1, target2_last_frame+1))
+			target1_frames = range(target1_last_frame-num_frames_in_stack+1, target1_last_frame+1)
+			target2_frames = range(target2_last_frame-num_frames_in_stack+1, target2_last_frame+1)
 			img_pairs.append([row[target1_frames], row[target2_frames]])
 			bucket = time_buckets_dict[difference]
 			target_buckets.append(bucket)
