@@ -7,8 +7,7 @@ import logging
 from sklearn.model_selection import train_test_split
 import torch
 from torchvision import transforms
-from torch.utils.data.dataset import Dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 
 from capstone_project.utils import imshow, save_object, load_object
 

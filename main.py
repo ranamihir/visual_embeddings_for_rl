@@ -138,7 +138,7 @@ def main():
 		start_epoch = epoch_trained # Start from (epoch_trained+1) if checkpoint loaded
 
 	# Check if model is to be parallelized
-	if TOTAL_GPUs > 1 and (NGPU or PARALLEL):
+	if TOTAL_GPUs > 1 and (PARALLEL or NGPU):
 		DEVICE_IDs = range(TOTAL_GPUs) if PARALLEL else range(NGPU)
 		logging.info('Using {} GPUs...'.format(len(DEVICE_IDs)))
 		embedding_network = nn.DataParallel(embedding_network, device_ids=DEVICE_IDs)
@@ -188,11 +188,11 @@ def main():
 	print_config(global_vars) # Print all global variables before saving checkpointing
 	save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
 					train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, \
-					NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, PARALLEL or NGPU)
+					NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES, PARALLEL or NGPU)
 	logging.info('Done.')
 
-	if len(train_loss_history):
-		logging.info('Saving and plotting loss and accuracy histories...')
+	if len(train_loss_history) and len(val_loss_history):
+		logging.info('Plotting and saving loss histories...')
 		fig = plt.figure(figsize=(10,8))
 		plt.plot(train_loss_history, alpha=0.5, color='blue', label='train')
 		xticks = [epoch*len(train_loader) for epoch in range(1, len(val_loss_history)+1)]
@@ -200,7 +200,10 @@ def main():
 		plt.legend()
 		plt.title('Loss vs. Iterations')
 		save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
+		logging.info('Done.')
 
+	if len(train_accuracy_history) and len(val_accuracy_history):
+		logging.info('Plotting and saving accuracy histories...')
 		fig = plt.figure(figsize=(10,8))
 		plt.plot(train_accuracy_history, alpha=0.5, color='blue', label='train')
 		plt.plot(val_accuracy_history, alpha=0.5, color='orange', label='test')

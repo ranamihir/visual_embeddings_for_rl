@@ -115,7 +115,8 @@ def setup_logging(project_dir, logging_dir):
 	log_path = os.path.join(project_dir, logging_dir)
 	filename = '{}.log'.format(time.strftime('%Y_%m_%d'))
 	log_handlers = [logging.FileHandler(os.path.join(log_path, filename)), logging.StreamHandler()]
-	logging.basicConfig(format='%(asctime)s: %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', handlers=log_handlers, level=logging.DEBUG)
+	logging.basicConfig(format='%(asctime)s: %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', \
+						handlers=log_handlers, level=logging.DEBUG)
 	logging.info('\n\n\n')
 
 def save_object(object, filepath):
@@ -145,8 +146,9 @@ def load_object(filepath):
 		return None
 	return object
 
-def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, train_accuracy_history, \
-					val_accuracy_history, epoch, dataset, num_frames_in_stack, num_pairs_per_example, project_dir, checkpoints_dir, is_parallel=False):
+def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
+					train_accuracy_history, val_accuracy_history, epoch, dataset, num_frames_in_stack, \
+					num_pairs_per_example, project_dir, checkpoints_dir, use_pool=False, use_res=False, is_parallel=False):
 
 	state_dict = {
 		'embedding_state_dict': embedding_network.module.state_dict() if is_parallel else embedding_network.state_dict(),
@@ -159,7 +161,8 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
 		'val_accuracy_history': val_accuracy_history
 	}
 
-	state_dict_name = 'state_dict_{}_{}_{}_{}.pkl'.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, epoch)
+	state_dict_name = 'state_dict_{}_num-frames-{}_num-pairs-{}_pool-{}_res-{}_epoch-{}.pkl'\
+					.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, use_pool, use_res, epoch)
 	state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
 	logging.info('Saving checkpoint "{}"...'.format(state_dict_path))
 	torch.save(state_dict, state_dict_path)
