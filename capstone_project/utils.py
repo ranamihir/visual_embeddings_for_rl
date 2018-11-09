@@ -82,13 +82,14 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
 	y_predicted = y_predicted.max(1)[1]
 	return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
 
-def imshow(data, project_dir, plots_dir, dataset):
+def imshow(data, mean, std, project_dir, plots_dir, dataset):
 	logging.info('Plotting sample data and saving to "{}_sample.png"...'.format(dataset))
 	image_dim = data.shape[-1]
 	images = data[np.random.RandomState(0).choice(len(data), size=1)]
 	images = torch.from_numpy(images)
 
 	images = make_grid(images[0].reshape(-1, 1, image_dim, image_dim), nrow=5, padding=5, pad_value=1)
+	images = images*std + mean  # unnormalize
 	np_image = images.numpy()
 
 	fig = plt.figure(figsize=(30, 10))

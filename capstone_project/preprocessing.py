@@ -27,7 +27,7 @@ class MovingMNISTDataset(Dataset):
 		video_idx = np.random.choice(len(self.data))
 		y = np.random.choice(list(self.time_buckets_dict.keys()))
 
-		(x1, x2), difference, frame_numbers = self._get_sample_at_difference(video_idx, y)
+		(x1, x2), difference, (frame1, frame2) = self._get_sample_at_difference(video_idx, y)
 
 		if self.transforms:
 			x1 = self.transforms(x1)
@@ -117,7 +117,7 @@ class AtariDataset(Dataset):
 		video_idx = np.random.choice(len(self.data))
 		y = np.random.choice(list(self.time_buckets_dict.keys()))
 
-		(x1, x2), difference, frame_numbers = self._get_sample_at_difference(video_idx, y)
+		(x1, x2), difference, (frame1, frame2) = self._get_sample_at_difference(video_idx, y)
 
 		if self.transforms:
 			x1 = self.transforms(x1)
@@ -189,7 +189,6 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', \
 							transforms=None):
 	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
-	# data = np.random.uniform(size=(1, 1000, 4, 84, 84))
 
 	if 'pong' in dataset:
 		IS_STACKED_DATA = 1
