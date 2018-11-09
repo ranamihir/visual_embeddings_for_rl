@@ -23,20 +23,23 @@ pip install -e .
 ## Usage
 ```
 usage: main.py [-h] [--project-dir PROJECT_DIR] [--dataset DATASET]
-               [--data-dir DATA_DIR] [--checkpoints-dir CHECKPOINTS_DIR]
+               [--data-ext DATA_EXT] [--data-dir DATA_DIR] [--offline]
+               [--checkpoints-dir CHECKPOINTS_DIR]
                [--load-ckpt LOAD_CHECKPOINT] [--batch-size BATCH_SIZE]
                [--epochs EPOCHS] [--device DEVICE] [--device-id DEVICE_ID]
-               [--ngpu NGPU] [--parallel] [--lr LR]
+               [--ngpu NGPU] [--parallel] [--lr LR] [--num-train NUM_TRAIN]
                [--num-frames NUM_FRAMES_IN_STACK]
-               [--num-pairs NUM_PAIRS_PER_EXAMPLE] [--use_pool] [--use_res]
+               [--num-pairs NUM_PAIRS_PER_EXAMPLE] [--use-pool] [--use-res]
                [--force]
 
 optional arguments:
   -h, --help                          show this help message and exit
   --project-dir PROJECT_DIR           path to project directory
   --dataset DATASET                   name of dataset file in "data" directory
-                                      mnist_test_seq.npy | moving_bars_20_121.npy, default=mnist_test_seq.py
+                                      mnist_test_seq | moving_bars_20_121 | etc., default=mnist_test_seq
+  --data-ext DATA_EXT                 extension of dataset file in data directory
   --data-dir DATA_DIR                 path to data directory (used if different from "data")
+  --offline                           use offline preprocessing of data loader
   --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory (used if different from "checkpoints")
   --load-ckpt LOAD_CHECKPOINT         name of checkpoint file to load
   --batch-size BATCH_SIZE             input batch size, default=64
@@ -47,8 +50,9 @@ optional arguments:
   --device-id DEVICE_ID               device id of gpu, default=0
   --ngpu NGPU                         number of GPUs to use (0,1,...,ngpu-1)
   --parallel                          use all GPUs available
+  --num-train NUM_TRAIN               number of training examples
   --num-frames NUM_FRAMES_IN_STACK    number of stacked frames, default=2
   --num-pairs NUM_PAIRS_PER_EXAMPLE   number of pairs per video, default=5
   --use-pool                          use max pooling instead of strided convolutions
   --use-res                           use residual layers
-  --force                             overwrites all existing data
+  --force                             overwrites all existing dumped data sets (if used with `--offline`)
