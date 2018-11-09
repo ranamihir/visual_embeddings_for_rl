@@ -29,9 +29,13 @@ class MovingMNISTDataset(Dataset):
 
 		(x1, x2), difference, frame_numbers = self._get_sample_at_difference(video_idx, y)
 
+		x1, x2 = torch.from_numpy(x1), torch.from_numpy(x2)
+
 		if self.transforms:
-			x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
-			x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
+			x1 = self.transforms(x1)
+			x2 = self.transforms(x2)
+			# x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
+			# x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
 
 		y, difference = torch.from_numpy(np.array(y)), torch.from_numpy(difference)
 		frame1, frame2 = torch.from_numpy(frame_numbers)
@@ -116,10 +120,11 @@ class AtariDataset(Dataset):
 		y = np.random.choice(list(self.time_buckets_dict.keys()))
 
 		(x1, x2), difference, frame_numbers = self._get_sample_at_difference(video_idx, y)
+		x1, x2 = torch.from_numpy(x1), torch.from_numpy(x2)
 
 		if self.transforms:
-			x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
-			x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
+			x1 = self.transforms(x1)
+			x2 = self.transforms(x2)
 
 		y, difference = torch.from_numpy(np.array(y)), torch.from_numpy(difference)
 		frame1, frame2 = torch.from_numpy(frame_numbers)
@@ -185,11 +190,8 @@ class AtariDataset(Dataset):
 
 def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, \
 							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', \
-							transforms=None, data_max=None, data_min=None):
-	if dataset_type == 'train':
-		data, data_max, data_min = load_data(project_dir, data_dir, dataset, dataset_type, ext)
-	else:
-		data = load_data(project_dir, data_dir, dataset, dataset_type, ext, data_max, data_min)
+							transforms=None):
+	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
 	# data, data_max, data_min = np.random.uniform(size=(1, 1000, 4, 84, 84)), 1., 0.
 
 	if 'pong' in dataset:
@@ -203,7 +205,7 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 		raise ValueError('Unknown dataset name "{}" passed!'.format(dataset))
 
 	if dataset_type == 'train':
-		transforms = get_normalize_transform(data)
+		transforms, mean, std = get_normalize_transform(data, num_frames_in_stack)
 		imshow(data, project_dir, plots_dir, dataset)
 
 	logging.info('Generating {} data loader...'.format(dataset_type))
@@ -219,13 +221,13 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 	logging.info('Done.')
 
 	if dataset_type == 'train':
-		return dataloader, transforms, data_max, data_min
+		return dataloader, transforms
 	return dataloader
 
 
 class OfflineMovingMNISTDataset(Dataset):
 	def __init__(self, X, y, differences, frame_numbers, transforms=None):
-		self.X = X
+		self.X = torch.from_numpy(X)
 		self.y = torch.from_numpy(y)
 		self.differences = torch.from_numpy(differences)
 		self.frame_numbers = torch.from_numpy(frame_numbers)
@@ -238,8 +240,10 @@ class OfflineMovingMNISTDataset(Dataset):
 		frame1, frame2 = self.frame_numbers[index]
 
 		if self.transforms:
-			x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
-			x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
+			x1 = self.transforms(x1)
+			x2 = self.transforms(x2)
+			# x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
+			# x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
 
 		return x1, x2, y, difference, (frame1, frame2)
 
@@ -269,9 +273,9 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 		logging.info('Did not find at least one data set on disk. Creating all 3...')
 
 		data_dict = {}
-		data_dict['train'], data_max, data_min = load_data(project_dir, data_dir, filename, 'train', ext)
-		for dataset_type in ['val', 'test']:
-			data_dict[dataset_type] = load_data(project_dir, data_dir, filename, dataset_type, ext, data_max, data_min)
+		# data_dict['train'], data_max, data_min = load_data(project_dir, data_dir, filename, 'train', ext)
+		for dataset_type in ['train', 'val', 'test']:
+			data_dict[dataset_type] = load_data(project_dir, data_dir, filename, dataset_type, ext)
 
 		sequence_length = data_dict['train'].shape[1]
 		max_frame_diff = np.hstack([bucket for bucket in time_buckets]).max()
@@ -280,7 +284,8 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 			stacked frames are {}'.format(max_frame_diff, sequence_length, num_frames_in_stack)
 
 		# Normalize data
-		transforms = get_normalize_transform(data_dict['train'])
+		transforms, mean, std = get_normalize_transform(data_dict['train'], num_frames_in_stack)
+		# transforms = None
 		imshow(data_dict['train'], project_dir, plots_dir, filename)
 
 		time_buckets_dict = get_time_buckets_dict(time_buckets)
@@ -326,22 +331,16 @@ def load_data(project_dir, data_dir, filename, dataset_type, ext, \
 		raise ValueError('Unknown file extension "{}"!'.format(ext))
 	logging.info('Done.')
 
-	# # Bring data in [0,255]
-	# if dataset_type == 'train' and data_max == None and data_min == None:
-	# 	data_min, data_max = data.min(), data.max()
-	# 	data = 255*(data - data_min)/(data_max-data_min)
-	# 	return data.astype(np.uint8), data_max, data_min
-	# else:
-	# 	data = 255*(data - data_min)/(data_max-data_min)
-	# 	return data.astype(np.uint8)
+	return data
 
-def get_normalize_transform(data):
+def get_normalize_transform(data, num_frames_in_stack):
+	# Calculate mean, std from train data, and normalize
+	mean = np.mean(data)
+	std = np.std(data)
 	normalize = transforms.Compose([
-		transforms.ToTensor(),
-	    transforms.Normalize((0,), (1,))
+	    transforms.Normalize((mean,)*num_frames_in_stack, (std,)*num_frames_in_stack)
 	])
-
-	return normalize
+	return normalize, mean, std
 
 def get_time_buckets_dict(time_buckets):
 	'''

@@ -100,13 +100,13 @@ def main():
 																				TIME_BUCKETS, BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
 																				NUM_FRAMES_IN_STACK, DATA_EXT, args.force)
 	else:
-		train_loader, transforms, data_max, data_min = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, \
+		train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, \
 																				NUM_TRAIN, 'train', TIME_BUCKETS, BATCH_SIZE, \
 																				NUM_FRAMES_IN_STACK, DATA_EXT)
 		val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_VAL, 'val', \
-										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms, data_max, data_min)
+										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
 		test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TEST, 'test', \
-										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms, data_max, data_min)
+										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
 
 	# Network hyperparameters
 	img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
