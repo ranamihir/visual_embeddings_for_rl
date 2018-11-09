@@ -161,8 +161,8 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
 		'val_accuracy_history': val_accuracy_history
 	}
 
-	state_dict_name = 'state_dict_{}_num-frames-{}_num-pairs-{}_pool-{}_res-{}_epoch-{}.pkl'\
-					.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, use_pool, use_res, epoch)
+	state_dict_name = 'state_dict_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
+					.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, use_pool*1, use_res*1, epoch)
 	state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
 	logging.info('Saving checkpoint "{}"...'.format(state_dict_path))
 	torch.save(state_dict, state_dict_path)
