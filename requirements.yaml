@@ -6,7 +6,8 @@ dependencies:
   - matplotlib
   - nb_conda
   - pip:
-    - scipy
-    - scikit-learn
     - torch==0.4.1
     - torchvision
+    - scipy
+    - scikit-learn
+    - h5py
