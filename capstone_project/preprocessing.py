@@ -19,7 +19,6 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_name, d
 	if len(data.shape) > 3:
 		if len(data.shape) == 5 and data.shape[-3] > 1:
 			IS_STACKED_DATA = 1
-			print(data.shape)
 			assert num_frames_in_stack == data.shape[-3], \
 				'NUM_FRAMES_IN_STACK (={}) must match number of stacked images in stacked dataset (={})!'\
 				.format(num_frames_in_stack, data.shape[-3])
