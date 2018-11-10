@@ -189,15 +189,13 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 							transforms=None):
 	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
 
-	if 'pong' in dataset:
+	if data.shape[-3] > 1:
 		IS_STACKED_DATA = 1
 		assert num_frames_in_stack == data.shape[-3], \
 			'NUM_FRAMES_IN_STACK (={}) must match number of stacked images in stacked dataset (={})!'\
 			.format(num_frames_in_stack, data.shape[-3])
-	elif 'mnist' in dataset or 'moving_bars' in dataset:
-		IS_STACKED_DATA = 0
 	else:
-		raise ValueError('Unknown dataset name "{}" passed!'.format(dataset))
+		IS_STACKED_DATA = 0
 
 	if dataset_type == 'train':
 		transforms, mean, std = get_normalize_transform(data, num_frames_in_stack)
