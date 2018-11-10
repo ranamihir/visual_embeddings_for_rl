@@ -11,7 +11,7 @@ import torch
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
-from capstone_project.utils import imshow, save_object, load_object
+from capstone_project.utils import imshow, plot_video, save_object, load_object
 
 
 class FixedMovingMNISTDataset(Dataset):
@@ -374,10 +374,10 @@ class AtariDataset(Dataset):
 		return torch.from_numpy(image_pair), torch.from_numpy(np.array(difference)), \
 				torch.from_numpy(image_pair_idxs)
 
-def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, dataset_size, dataset_type, \
+def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_name, dataset_size, dataset_type, \
 							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', \
 							transforms=None):
-	data = load_data(project_dir, data_dir, dataset, dataset_type, ext)
+	data = load_data(project_dir, data_dir, dataset_name, dataset_type, ext)
 
 	if len(data.shape) > 3:
 		if data.shape[-3] > 1:
@@ -391,7 +391,7 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 		# Normalize data and create dataloaders
 		if dataset_type == 'train':
 			transforms, mean, std = get_normalize_transform(data, num_frames_in_stack)
-			imshow(data, mean, std, project_dir, plots_dir, dataset)
+			imshow(data, mean, std, project_dir, plots_dir, dataset_name)
 
 		logging.info('Generating {} data loader...'.format(dataset_type))
 		if IS_STACKED_DATA:
@@ -407,6 +407,9 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset, datase
 		video_generator = RandomMovingMNISTVideoGenerator(data)
 		dataset = RandomMovingMNISTDataset(video_generator, time_buckets, num_frames_in_stack, \
 											dataset_size)
+		video = video_generator.__getitem__()
+		imshow(video, 0, 1, project_dir, plots_dir, dataset_name)
+		plot_video(video, project_dir, plots_dir, dataset_name)
 		transforms = None
 
 	shuffle = 1 if dataset_type == 'train' else False
