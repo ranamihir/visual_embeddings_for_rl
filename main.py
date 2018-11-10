@@ -146,6 +146,7 @@ def main():
 		logging.info('Done.')
 	embedding_network = embedding_network.to(DEVICE)
 	classification_network = classification_network.to(DEVICE)
+	early_stopping = EarlyStopping(mode='minimize', min_delta=0, patience=10)
 
 	for epoch in range(start_epoch+1, N_EPOCHS+start_epoch+1):
 		try:
@@ -178,6 +179,11 @@ def main():
 
 			logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, np.sum(train_losses), accuracy_train))
 			logging.info('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
+
+			if early_stopping.step(val_loss):
+				logging.info('Stopping early after {} epochs.'.format(epoch))
+				stop_epoch = epoch
+				break
 		except KeyboardInterrupt:
 			logging.info('Keyboard Interrupted!')
 			stop_epoch = epoch-1

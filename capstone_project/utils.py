@@ -220,3 +220,49 @@ def load_checkpoint(embedding_network, classification_network, optimizer, checkp
 
 	return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
 			train_accuracy_history, val_accuracy_history, epoch_trained
+
+
+class EarlyStopping(object):
+	'''
+	Implements early stopping in PyTorch
+	Source: https://gist.github.com/stefanonardo/693d96ceb2f531fa05db530f3e21517d
+	'''
+
+	def __init__(self, mode='min', min_delta=0, patience=10):
+		self.mode = mode
+		self.min_delta = min_delta
+		self.patience = patience
+		self.best = None
+		self.num_bad_epochs = 0
+		self.is_better = None
+		self._init_is_better(mode, min_delta)
+
+		if patience == 0:
+			self.is_better = lambda a, b: True
+			self.step = lambda a: False
+
+	def step(self, metrics):
+		if self.best is None:
+			self.best = metrics
+			return False
+
+		if np.isnan(metrics):
+			return True
+
+		if self.is_better(metrics, self.best):
+			self.num_bad_epochs = 0
+			self.best = metrics
+		else:
+			self.num_bad_epochs += 1
+
+		if self.num_bad_epochs >= self.patience:
+			return True
+		return False
+
+	def _init_is_better(self, mode, min_delta):
+		if mode not in {'minimize', 'maximize'}:
+			raise ValueError('mode "{}" is unknown!'.format(mode))
+		if mode == 'minimize':
+			self.is_better = lambda a, best: a < best - min_delta
+		elif mode == 'maximize':
+			self.is_better = lambda a, best: a > best + min_delta

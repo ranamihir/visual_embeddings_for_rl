@@ -13,17 +13,18 @@ from capstone_project.datasets import *
 from capstone_project.utils import imshow, plot_video, save_object, load_object
 
 def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_name, dataset_size, dataset_type, \
-							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', \
-							transforms=None):
+							time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', transforms=None):
 	data = load_data(project_dir, data_dir, dataset_name, dataset_type, ext)
 
 	if len(data.shape) > 3:
-		if data.shape[-3] > 1:
+		if len(data.shape) == 5 and data.shape[-3] > 1:
 			IS_STACKED_DATA = 1
+			print(data.shape)
 			assert num_frames_in_stack == data.shape[-3], \
 				'NUM_FRAMES_IN_STACK (={}) must match number of stacked images in stacked dataset (={})!'\
 				.format(num_frames_in_stack, data.shape[-3])
 		else:
+			assert len(data.shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
 			IS_STACKED_DATA = 0
 
 		# Normalize data and create dataloaders
