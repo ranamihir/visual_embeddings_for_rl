@@ -180,7 +180,7 @@ def main():
 			logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, np.sum(train_losses), accuracy_train))
 			logging.info('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
 
-			if early_stopping.step(val_loss):
+			if early_stopping.step(val_loss) or round(accuracy_val) == 100:
 				logging.info('Stopping early after {} epochs.'.format(epoch))
 				stop_epoch = epoch
 				break
