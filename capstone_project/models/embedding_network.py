@@ -41,20 +41,26 @@ class EmbeddingNetwork(nn.Module):
 		self.use_pool = use_pool
 		self.use_res = use_res
 
-		# Conv-ReLU layers with batch-norm and downsampling
-		stride = 1 if use_pool else 2
+		# Conv-ReLU layers with batch-norm
 		self.conv1 = conv3x3(in_channels, 32)
 		self.bn1 = nn.BatchNorm2d(32)
-		self.conv2 = conv3x3(32, 64, stride=stride)
+
+		stride = 1 if use_pool else 2
+
+		# Conv-ReLU layers with batch-norm and downsampling
+		self.conv2 = conv3x3(32, 64)
 		self.bn2 = nn.BatchNorm2d(64)
-		self.conv3 = conv3x3(64, 64, stride=stride)
+		self.downsample1 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=stride)
+
+		# Conv-ReLU layers with batch-norm and downsampling
+		self.conv3 = conv3x3(64, 64)
 		self.bn3 = nn.BatchNorm2d(64)
-		if use_pool:
-			self.pool = nn.MaxPool2d(2)
+		self.downsample2 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=stride)
+
 		self.relu = nn.ReLU(inplace=True)
 
 		# Residual layers
-		if self.use_res:
+		if use_res:
 			self.residual_layers = self._make_layer(block, 64, 64, num_blocks)
 
 		# Automatically get dimension of FC layer by using dummy input
@@ -64,8 +70,8 @@ class EmbeddingNetwork(nn.Module):
 		self.fc1 = nn.Linear(fc1_input_size, hidden_size)
 		self.fc2 = nn.Linear(hidden_size, out_dim)
 
-		# Initialize weights
-		self._init_weights()
+		self._init_weights() # Initialize weights
+		self._get_trainable_params() # Print number of trainable parameters
 
 	def forward(self, input):
 		# Reshape input to batch_size x in_channels x height x width
@@ -78,14 +84,13 @@ class EmbeddingNetwork(nn.Module):
 		output = self.conv2(output)
 		output = self.bn2(output)
 		output = self.relu(output)
-		if self.use_pool:
-			output = self.pool(output)
+		output = self.downsample1(output)
+
 
 		output = self.conv3(output)
 		output = self.bn3(output)
 		output = self.relu(output)
-		if self.use_pool:
-			output = self.pool(output)
+		output = self.downsample2(output)
 
 		if self.use_res:
 			output = self.residual_layers(output)
@@ -93,8 +98,11 @@ class EmbeddingNetwork(nn.Module):
 		output = output.view(output.size(0), -1)
 		output = self.fc1(output)
 		output = self.fc2(output)
+
 		output_n = torch.norm(output, p=2, dim=1, keepdim=True)
 		output = output.div(output_n.expand_as(output))
+		output = output - output.mean()
+
 		return output
 
 	def _make_layer(self, block, in_channels, out_channels, num_blocks, stride=1, downsample=None):
@@ -131,24 +139,16 @@ class EmbeddingNetwork(nn.Module):
 							self.relu,
 							self.conv2,
 							self.bn2,
-							self.relu)
-
-		if self.use_pool:
-			layers = nn.Sequential(layers,
-								self.pool,
-								self.conv3,
-								self.bn3,
-								self.relu,
-								self.pool)
-		else:
-			layers = nn.Sequential(layers,
-								self.conv3,
-								self.bn3,
-								self.relu)
+							self.relu,
+							self.downsample1,
+							self.conv3,
+							self.bn3,
+							self.relu,
+							self.downsample2
+							)
 
 		if self.use_res:
-			layers = nn.Sequential(layers,
-								self.residual_layers)
+			layers = nn.Sequential(layers, self.residual_layers)
 
 		with torch.no_grad():
 			dummy_input = torch.zeros([1, self.in_channels, self.in_dim, self.in_dim]).float()
@@ -158,3 +158,8 @@ class EmbeddingNetwork(nn.Module):
 		logging.info('Input hidden size of FC1 in Embedding Network: {}'.format(fc_size))
 
 		return fc_size, dummy_output.squeeze(0).shape
+
+	def _get_trainable_params(self):
+		num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+		logging.info('Number of trainable parameters in EmbeddingNetwork: {}'.format(num_params))
+		return num_params
