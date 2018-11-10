@@ -98,6 +98,21 @@ def imshow(data, mean, std, project_dir, plots_dir, dataset):
 	save_plot(project_dir, plots_dir, fig, '{}_sample.png'.format(dataset))
 	logging.info('Done.')
 
+def plot_video(data, project_dir, plots_dir, dataset):
+	file_name = '{}_video_sample.png'.format(dataset)
+	logging.info('Plotting sample data and saving to "{}"...'.format(file_name))
+	image_dim = data.shape[-1]
+	images = torch.from_numpy(data)
+
+	images = make_grid(images.reshape(-1, 1, image_dim, image_dim), nrow=10, padding=5, pad_value=1)
+	np_image = images.numpy()
+
+	fig = plt.figure(figsize=(30, 10))
+	plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
+	plt.tight_layout()
+	save_plot(project_dir, plots_dir, fig, file_name)
+	logging.info('Done.');
+
 def print_config(vars_dict):
 	vars_dict = {key: value for key, value in vars_dict.items() if key == key.upper()}
 	logging.info(pformat(vars_dict))
