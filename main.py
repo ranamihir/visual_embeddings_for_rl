@@ -146,7 +146,9 @@ def main():
 		logging.info('Done.')
 	embedding_network = embedding_network.to(DEVICE)
 	classification_network = classification_network.to(DEVICE)
+
 	early_stopping = EarlyStopping(mode='minimize', min_delta=0, patience=10)
+	best_epoch = 1
 
 	for epoch in range(start_epoch+1, N_EPOCHS+start_epoch+1):
 		try:
@@ -180,7 +182,19 @@ def main():
 			logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, np.sum(train_losses), accuracy_train))
 			logging.info('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
 
-			if early_stopping.step(val_loss) or round(accuracy_val) == 100:
+			if early_stopping.is_better(val_loss):
+				logging.info('Saving current best model checkpoint...')
+				save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
+							train_accuracy_history, val_accuracy_history, epoch, DATASET, NUM_FRAMES_IN_STACK, \
+							NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES, PARALLEL or NGPU)
+				logging.info('Done.')
+				logging.info('Removing previous best model checkpoint...')
+				remove_checkpoint(DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, \
+								CHECKPOINTS_DIR, best_epoch, USE_POOL, USE_RES)
+				logging.info('Done.')
+				best_epoch = epoch
+
+			if early_stopping.stop(val_loss) or round(accuracy_val) == 100:
 				logging.info('Stopping early after {} epochs.'.format(epoch))
 				stop_epoch = epoch
 				break

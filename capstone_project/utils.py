@@ -183,6 +183,16 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
 	torch.save(state_dict, state_dict_path)
 	logging.info('Done.')
 
+def remove_checkpoint(dataset, num_frames_in_stack, num_pairs_per_example, project_dir, \
+					checkpoints_dir, epoch, use_pool=False, use_res=False):
+	state_dict_name = 'state_dict_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
+					.format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, use_pool*1, use_res*1, epoch)
+	state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
+	logging.info('Removing checkpoint "{}"...'.format(state_dict_path))
+	if os.path.exists(state_dict_path):
+		os.remove(state_dict_path)
+	logging.info('Done.')
+
 def load_checkpoint(embedding_network, classification_network, optimizer, checkpoint_file, project_dir, checkpoints_dir, device):
 	# Note: Input model & optimizer should be pre-defined. This routine only updates their states.
 
@@ -225,44 +235,47 @@ def load_checkpoint(embedding_network, classification_network, optimizer, checkp
 class EarlyStopping(object):
 	'''
 	Implements early stopping in PyTorch
-	Source: https://gist.github.com/stefanonardo/693d96ceb2f531fa05db530f3e21517d
+	Reference: https://gist.github.com/stefanonardo/693d96ceb2f531fa05db530f3e21517d
 	'''
 
-	def __init__(self, mode='min', min_delta=0, patience=10):
+	def __init__(self, mode='minimize', min_delta=0, patience=10):
 		self.mode = mode
+		self._check_mode()
 		self.min_delta = min_delta
 		self.patience = patience
 		self.best = None
 		self.num_bad_epochs = 0
-		self.is_better = None
-		self._init_is_better(mode, min_delta)
+		self.min_delta = min_delta
 
 		if patience == 0:
-			self.is_better = lambda a, b: True
-			self.step = lambda a: False
+			self.is_better = lambda metric: True
+			self.stop = lambda metric: False
 
-	def step(self, metrics):
+	def _check_mode(self):
+		if self.mode not in {'maximize', 'minimize'}:
+			raise ValueError('mode "{}" is unknown!'.format(self.mode))
+
+	def is_better(self, metric):
 		if self.best is None:
-			self.best = metrics
+			return True
+		if self.mode == 'minimize':
+			return metric < self.best - self.min_delta
+		return metric > self.best + self.min_delta
+
+	def stop(self, metric):
+		if self.best is None:
+			self.best = metric
 			return False
 
-		if np.isnan(metrics):
+		if np.isnan(metric):
 			return True
 
-		if self.is_better(metrics, self.best):
+		if self.is_better(metric):
 			self.num_bad_epochs = 0
-			self.best = metrics
+			self.best = metric
 		else:
 			self.num_bad_epochs += 1
 
 		if self.num_bad_epochs >= self.patience:
 			return True
 		return False
-
-	def _init_is_better(self, mode, min_delta):
-		if mode not in {'minimize', 'maximize'}:
-			raise ValueError('mode "{}" is unknown!'.format(mode))
-		if mode == 'minimize':
-			self.is_better = lambda a, best: a < best - min_delta
-		elif mode == 'maximize':
-			self.is_better = lambda a, best: a > best + min_delta
