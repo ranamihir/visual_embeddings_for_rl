@@ -148,7 +148,7 @@ def main():
 	classification_network = classification_network.to(DEVICE)
 
 	early_stopping = EarlyStopping(mode='minimize', min_delta=0, patience=10)
-	best_epoch = 1
+	best_epoch = start_epoch+1
 
 	for epoch in range(start_epoch+1, N_EPOCHS+start_epoch+1):
 		try:
