@@ -92,7 +92,8 @@ def imshow(data, mean, std, project_dir, plots_dir, dataset):
 	images = images*std + mean  # unnormalize
 	np_image = images.numpy()
 
-	fig = plt.figure(figsize=(30, 10))
+	fig = plt.figure(figsize=(5, 5))
+	plt.axis('off')
 	plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
 	plt.tight_layout()
 	save_plot(project_dir, plots_dir, fig, '{}_sample.png'.format(dataset))
@@ -108,10 +109,11 @@ def plot_video(data, project_dir, plots_dir, dataset):
 	np_image = images.numpy()
 
 	fig = plt.figure(figsize=(30, 10))
+	plt.axis('off')
 	plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
 	plt.tight_layout()
 	save_plot(project_dir, plots_dir, fig, file_name)
-	logging.info('Done.');
+	logging.info('Done.')
 
 def print_config(vars_dict):
 	vars_dict = {key: value for key, value in vars_dict.items() if key == key.upper()}
@@ -207,7 +209,7 @@ def load_checkpoint(embedding_network, classification_network, optimizer, checkp
 		state_dict = torch.load(state_dict_path)
 
 		# Extract last trained epoch from checkpoint file
-		epoch_trained = int(os.path.splitext(checkpoint_file)[0].split('_')[-1])
+		epoch_trained = int(os.path.splitext(checkpoint_file)[0].split('_epoch')[-1])
 		assert epoch_trained == state_dict['epoch']
 
 		embedding_network.load_state_dict(state_dict['embedding_state_dict'])

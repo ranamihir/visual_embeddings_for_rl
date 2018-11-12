@@ -56,3 +56,4 @@ optional arguments:
   --use-pool                          use max pooling instead of strided convolutions
   --use-res                           use residual layers
   --force                             overwrites all existing dumped data sets (if used with `--offline`)
+```

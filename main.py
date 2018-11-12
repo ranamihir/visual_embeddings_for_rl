@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
-from torch.autograd import Variable
 
 import matplotlib
 matplotlib.use('Agg')
@@ -17,7 +16,7 @@ import matplotlib.pyplot as plt
 from capstone_project.preprocessing import generate_all_offline_dataloaders, generate_online_dataloader
 from capstone_project.models.embedding_network import EmbeddingNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
-from capstone_project.utils import *
+import capstone_project.utils
 
 
 parser = argparse.ArgumentParser()
@@ -101,8 +100,8 @@ def main():
 																				NUM_FRAMES_IN_STACK, DATA_EXT, args.force)
 	else:
 		train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, \
-																				NUM_TRAIN, 'train', TIME_BUCKETS, BATCH_SIZE, \
-																				NUM_FRAMES_IN_STACK, DATA_EXT)
+															NUM_TRAIN, 'train', TIME_BUCKETS, BATCH_SIZE, \
+															NUM_FRAMES_IN_STACK, DATA_EXT)
 		val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_VAL, 'val', \
 										TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
 		test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TEST, 'test', \
