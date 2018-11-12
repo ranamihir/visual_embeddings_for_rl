@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from capstone_project.preprocessing import generate_all_offline_dataloaders, generate_online_dataloader
 from capstone_project.models.embedding_network import EmbeddingNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
-import capstone_project.utils
+from capstone_project.utils import *
 
 
 parser = argparse.ArgumentParser()
