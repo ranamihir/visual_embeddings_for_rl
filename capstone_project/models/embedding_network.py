@@ -45,17 +45,15 @@ class EmbeddingNetwork(nn.Module):
 		self.conv1 = conv3x3(in_channels, 32)
 		self.bn1 = nn.BatchNorm2d(32)
 
-		stride = 1 if use_pool else 2
-
 		# Conv-ReLU layers with batch-norm and downsampling
 		self.conv2 = conv3x3(32, 64)
 		self.bn2 = nn.BatchNorm2d(64)
-		self.downsample1 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=stride)
+		self.downsample1 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=2)
 
 		# Conv-ReLU layers with batch-norm and downsampling
 		self.conv3 = conv3x3(64, 64)
 		self.bn3 = nn.BatchNorm2d(64)
-		self.downsample2 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=stride)
+		self.downsample2 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=2)
 
 		self.relu = nn.ReLU(inplace=True)
 
@@ -97,6 +95,7 @@ class EmbeddingNetwork(nn.Module):
 
 		output = output.view(output.size(0), -1)
 		output = self.fc1(output)
+		output = self.relu(output)
 		output = self.fc2(output)
 
 		output_n = torch.norm(output, p=2, dim=1, keepdim=True)
