@@ -98,9 +98,9 @@ class EmbeddingNetwork(nn.Module):
 		output = self.relu(output)
 		output = self.fc2(output)
 
-		output_n = torch.norm(output, p=2, dim=1, keepdim=True)
-		output = output.div(output_n.expand_as(output))
+		# Zero centering and l2 normalization
 		output = output - output.mean()
+		output = output / torch.norm(output, p=2, dim=1, keepdim=True)
 
 		return output
 
