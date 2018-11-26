@@ -11,36 +11,42 @@ from torch.utils.data import DataLoader
 from capstone_project.datasets import *
 from capstone_project.utils import imshow, plot_video, save_object, load_object
 
-def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_name, dataset_size, dataset_type, \
-                            time_buckets, batch_size, num_frames_in_stack=2, ext='.npy', transforms=None):
-    data = load_data(project_dir, data_dir, dataset_name, dataset_type, ext)
+def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
+                            dataset_name, dataset_size, data_type, time_buckets, \
+                            batch_size, num_frames_in_stack=2, num_channels=1, \
+                            ext='.npy', transforms=None):
+    assert dataset_type in ['maze', 'random_mmnist', 'fixed_mmnist'], \
+        'Unknown dataset type "{}" passed.'.format(dataset_type)
 
-    if len(data.shape) > 3:
-        if len(data.shape) == 5 and data.shape[-3] > 1:
-            assert num_frames_in_stack == data.shape[-3], \
-                'NUM_FRAMES_IN_STACK (={}) must match number of stacked images in stacked dataset (={})!'\
-                .format(num_frames_in_stack, data.shape[-3])
-            IS_STACKED_DATA = 1
-        else:
-            assert len(data.shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
-            IS_STACKED_DATA = 0
+    logging.info('Generating {} data loader...'.format(data_type))
+
+    # Maze Dataset
+    if dataset_type == 'maze':
+        data = load_maze_data(project_dir, data_dir, dataset_name, data_type)
+        assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
+
+        transforms = None
+        dataset = MazeDataset(data, time_buckets, num_frames_in_stack, num_channels, \
+                            dataset_size, transforms=transforms)
+
+    # Fixed Moving MNIST Dataset
+    elif dataset_type == 'fixed_mmnist':
+        data = load_data(project_dir, data_dir, dataset_name, data_type, ext)
+        assert len(data.shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
 
         # Normalize data and create dataloaders
-        if dataset_type == 'train':
+        if data_type == 'train':
             transforms, mean, std = get_normalize_transform(data, num_frames_in_stack)
             imshow(data, mean, std, project_dir, plots_dir, dataset_name)
 
-        logging.info('Generating {} data loader...'.format(dataset_type))
-        if IS_STACKED_DATA:
-            dataset = AtariDataset(data, time_buckets, num_frames_in_stack, \
-                                dataset_size, transforms=transforms)
-        else:
-            dataset = FixedMovingMNISTDataset(data, time_buckets, num_frames_in_stack, \
-                                        dataset_size, transforms=transforms)
-    else:
+        dataset = FixedMovingMNISTDataset(data, time_buckets, num_frames_in_stack, \
+                                    dataset_size, transforms=transforms)
+
+    # Random Moving MNIST Dataset
+    elif dataset_type == 'random_mmnist':
+        data = load_data(project_dir, data_dir, dataset_name, data_type, ext)
         assert len(data.shape) == 3, 'Unknown input data shape "{}"'.format(data.shape)
 
-        logging.info('Generating {} data loader...'.format(dataset_type))
         video_generator = RandomMovingMNISTVideoGenerator(data)
         dataset = RandomMovingMNISTDataset(video_generator, time_buckets, num_frames_in_stack, \
                                             dataset_size)
@@ -49,16 +55,17 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_name, d
         plot_video(video, project_dir, plots_dir, dataset_name)
         transforms = None
 
-    shuffle = 1 if dataset_type == 'train' else False
+    shuffle = 1 if data_type == 'train' else False
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=4)
     logging.info('Done.')
 
-    if dataset_type == 'train':
+    if data_type == 'train':
         return dataloader, transforms
     return dataloader
 
-def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, batch_size, \
-                        num_pairs_per_example=5, num_frames_in_stack=2, ext='.npy', force=False):
+def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename, time_buckets, \
+                                    batch_size, num_pairs_per_example=5, num_frames_in_stack=2, \
+                                    ext='.npy', force=False):
 
     data_path = os.path.join(project_dir, data_dir, '{}_{}_{}_{}.pkl')
     train_path = data_path.format(filename, 'train', num_frames_in_stack, num_pairs_per_example)
@@ -68,10 +75,11 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
     if not force and os.path.exists(train_path) and os.path.exists(val_path) and os.path.exists(test_path):
         logging.info('Found all data sets on disk.')
         dataloaders = []
-        for dataset_type in ['train', 'val', 'test']:
-            logging.info('Loading {} data set...'.format(dataset_type))
-            dataset = load_object(data_path.format(filename, dataset_type, num_frames_in_stack, num_pairs_per_example))
-            shuffle = 1 if dataset_type == 'train' else False
+        for data_type in ['train', 'val', 'test']:
+            logging.info('Loading {} data set...'.format(data_type))
+            dataset = load_object(data_path.format(filename, data_type, num_frames_in_stack, \
+                                                   num_pairs_per_example))
+            shuffle = 1 if data_type == 'train' else False
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=4)
             dataloaders.append(dataloader)
             logging.info('Done.')
@@ -80,8 +88,8 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
         logging.info('Did not find at least one data set on disk. Creating all 3...')
 
         data_dict = {}
-        for dataset_type in ['train', 'val', 'test']:
-            data_dict[dataset_type] = load_data(project_dir, data_dir, filename, dataset_type, ext)
+        for data_type in ['train', 'val', 'test']:
+            data_dict[data_type] = load_data(project_dir, data_dir, filename, data_type, ext)
 
         sequence_length = data_dict['train'].shape[1]
         max_frame_diff = np.hstack([bucket for bucket in time_buckets]).max()
@@ -94,19 +102,21 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
         imshow(data_dict['train'], project_dir, plots_dir, filename)
 
         time_buckets_dict = get_time_buckets_dict(time_buckets)
-        differences_dict = get_candidates_differences_dict(sequence_length, max_frame_diff, num_frames_in_stack)
+        differences_dict = get_candidates_differences_dict(sequence_length, max_frame_diff, \
+                                                           num_frames_in_stack)
 
         dataloaders = []
-        for dataset_type in ['train', 'val', 'test']:
-            logging.info('Generating {} data set...'.format(dataset_type))
+        for data_type in ['train', 'val', 'test']:
+            logging.info('Generating {} data set...'.format(data_type))
             stacked_img_pairs, target_buckets = np.array([]), np.array([])
             target_differences, target_frame_numbers = np.array([]), np.array([])
 
             for difference in range(max_frame_diff+1):
-                img_pairs, buckets, differences, frame_numbers = get_samples_at_difference(data_dict[dataset_type], \
-                                                                difference, differences_dict, num_pairs_per_example, \
-                                                                num_frames_in_stack, time_buckets_dict)
-                stacked_img_pairs = np.vstack((stacked_img_pairs, img_pairs)) if stacked_img_pairs.size else img_pairs
+                img_pairs, buckets, differences, frame_numbers = \
+                    get_samples_at_difference(data_dict[data_type], difference, differences_dict, \
+                                              num_pairs_per_example, num_frames_in_stack, time_buckets_dict)
+                stacked_img_pairs = np.vstack((stacked_img_pairs, img_pairs)) if stacked_img_pairs.size \
+                                                                              else img_pairs
                 target_buckets = np.append(target_buckets, buckets)
                 target_differences = np.append(target_differences, differences)
                 target_frame_numbers = np.vstack((target_frame_numbers, frame_numbers)) \
@@ -114,20 +124,21 @@ def generate_all_offline_dataloaders(project_dir, data_dir, plots_dir, filename,
 
             dataset = OfflineMovingMNISTDataset(stacked_img_pairs, target_buckets, target_differences, \
                                                 target_frame_numbers, transforms=transforms)
-            logging.info('Done. Dumping {} data set to disk...'.format(dataset_type))
-            save_object(dataset, data_path.format(filename, dataset_type, num_frames_in_stack, num_pairs_per_example))
+            logging.info('Done. Dumping {} data set to disk...'.format(data_type))
+            save_object(dataset, data_path.format(filename, data_type, num_frames_in_stack, \
+                                                  num_pairs_per_example))
             logging.info('Done.')
 
-            shuffle = True if dataset_type == 'train' else False
+            shuffle = True if data_type == 'train' else False
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=4)
             dataloaders.append(dataloader)
 
     return dataloaders
 
-def load_data(project_dir, data_dir, filename, dataset_type, ext):
-    filename = '{}_{}{}'.format(filename, dataset_type, ext)
-    logging.info('Loading "{}"...'.format(filename))
-    file_path = os.path.join(project_dir, data_dir, filename)
+def load_data(project_dir, data_dir, filename, data_type, ext):
+    filename_dataset = '{}_{}{}'.format(filename, data_type, ext)
+    logging.info('Loading "{}"...'.format(filename_dataset))
+    file_path = os.path.join(project_dir, data_dir, filename_dataset)
 
     if ext == '.npy':
         data = np.load(file_path)
@@ -141,6 +152,63 @@ def load_data(project_dir, data_dir, filename, dataset_type, ext):
     logging.info('Done.')
 
     return data
+
+def load_maze_data(project_dir, data_dir, filename, data_type):
+    filename_dataset = '{}_{}.h5'.format(filename, data_type)
+    file_path = os.path.join(project_dir, data_dir, filename_dataset)
+    if os.path.exists(file_path):
+        logging.info('Loading "{}"...'.format(file_path))
+        all_data = []
+        with h5py.File(file_path, 'r') as f:
+            all_data = [f[key][:] for key in f.keys()]
+        logging.info('Done.')
+    else:
+        all_data = split_and_dump_maze_data(project_dir, data_dir, filename, data_type)
+
+    min_seq_len = all_data[0].shape[0]
+    for video in all_data:
+        min_seq_len = min(min_seq_len, video.shape[0])
+    logging.info('Min sequence length in {} data: {}'.format(data_type, min_seq_len))
+    return all_data
+
+def split_and_dump_maze_data(project_dir, data_dir, filename, data_type, val_size=0.2, test_size=0.2):
+    file_path_in = os.path.join(project_dir, data_dir, '{}.h5'.format(filename))
+    logging.info('Loading "{}"...'.format(file_path_in))
+    with h5py.File(file_path_in, 'r') as f_in:
+        all_data, keys = [], []
+        for key in f_in.keys():
+            all_data.append(f_in[key][:])
+            keys.append(key)
+    logging.info('Done.')
+
+    # Randomly shuffle data set
+    p = np.random.RandomState(1337).permutation(range(len(all_data)))
+    all_data = [all_data[i] for i in p]
+    keys = [keys[i] for i in p]
+
+    n = len(all_data)
+    num_test = int(test_size*len(all_data))
+    num_val = int(val_size*len(all_data))
+    start_idx = {
+        'train': 0,
+        'val': n-num_test-num_val,
+        'test': -num_test
+    }
+    data_dict = {
+        'train': all_data[:n-num_test-num_val],
+        'val': all_data[n-num_test-num_val:n-num_test],
+        'test': all_data[-num_test:]
+    }
+
+    file_path_out = os.path.join(project_dir, data_dir, '{}_{}.h5'.format(filename, data_type))
+    logging.info('Dumping and returning {}...'.format(file_path_out))
+    with h5py.File(file_path_out, 'w') as f_out:
+        for i in range(len(data_dict[data_type])):
+            # Retain the original keys when splitting into train/val/test
+            f_out.create_dataset(keys[start_idx[data_type]+i], data=data_dict[data_type][i])
+    logging.info('Done.')
+
+    return data_dict[data_type]
 
 def get_normalize_transform(data, num_frames_in_stack):
     # Calculate mean, std from train data, and normalize

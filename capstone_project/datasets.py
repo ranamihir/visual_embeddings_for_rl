@@ -286,14 +286,14 @@ class RandomMovingMNISTDataset(Dataset):
                 torch.from_numpy(image_pair_idxs)
 
 
-class AtariDataset(Dataset):
-    def __init__(self, data, time_buckets, num_frames_in_stack=4, size=300000, transforms=None):
+class MazeDataset(Dataset):
+    def __init__(self, data, time_buckets, num_frames_in_stack=4, num_channels=3, size=300000, transforms=None):
         self.data = data
         self.size = size
         self.num_frames_in_stack = num_frames_in_stack
+        self.num_channels = num_channels
         self.time_buckets_dict = self._get_time_buckets_dict(time_buckets)
         self._check_data()
-        self.candidates_dict = self._get_candidates_differences_dict()
         self.transforms = transforms
 
     def __getitem__(self, index):
@@ -314,11 +314,17 @@ class AtariDataset(Dataset):
         return self.size
 
     def _check_data(self):
-        sequence_length = self.data.shape[1]
         max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
-        assert max_frame_diff <= sequence_length-self.num_frames_in_stack, \
-            'Cannot have difference of {} when sequence length is {} and number of \
-            stacked frames are {}'.format(max_frame_diff, sequence_length, self.num_frames_in_stack)
+        video = self.data[0]
+        min_seq_len, num_channels = self.data[0].shape[:2]
+        assert self.num_channels == num_channels, "Number of channels passed \
+            (={}) don't match that in data (={})".format(self.num_channels, num_channels)
+
+        for video in self.data:
+            min_seq_len = min(min_seq_len, video.shape[0])
+        assert max_frame_diff <= min_seq_len, \
+            'Min sequence length (={}) not long enough for max_frame_diff (={})'\
+            .format(min_seq_len, max_frame_diff)
 
     def _get_time_buckets_dict(self, time_buckets):
         '''
@@ -329,14 +335,13 @@ class AtariDataset(Dataset):
         buckets_dict = dict(zip(range(len(time_buckets)), time_buckets))
         return buckets_dict
 
-    def _get_candidates_differences_dict(self):
+    def _get_candidates_differences_dict(self, video):
         '''
         Returns a dict with the key as the time difference between the frames
         and the value as a list of tuples (start_frame, end_frame) containing
         all the pair of frames with that time difference
         '''
-        logging.info('Getting frame differences dictionary...')
-        sequence_length = self.data.shape[1]
+        sequence_length = video.shape[0]
         max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
 
         differences_dict = {}
@@ -347,7 +352,6 @@ class AtariDataset(Dataset):
                 differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
                 start_frame += 1
                 end_frame += 1
-        logging.info('Done.')
         return differences_dict
 
     def _get_sample_at_difference(self, video_idx, bucket_idx):
@@ -359,7 +363,7 @@ class AtariDataset(Dataset):
         '''
         video = self.data[video_idx]
         difference = np.random.choice(self.time_buckets_dict[bucket_idx])
-        candidates = self.candidates_dict[difference]
+        candidates = self._get_candidates_differences_dict(video)[difference]
         pair_idx = np.random.choice(len(candidates))
         image1_frame_idx, image2_frame_idx = candidates[pair_idx]
         image_pair_idxs = np.array([image1_frame_idx, image2_frame_idx])
