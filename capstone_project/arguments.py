@@ -5,6 +5,9 @@ def get_args():
     parser = argparse.ArgumentParser(description='Learning Visual Embeddings')
     parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', \
                         help='path to project directory', required=False, default='.')
+    parser.add_argument('--dataset-type', metavar='DATASET_TYPE', dest='dataset_type', \
+                        help='name of PyTorch Dataset to use: maze | fixed_mmnist | random_mmnist', \
+                        required=False, default='maze')
     parser.add_argument('--dataset', metavar='DATASET', dest='dataset', \
                         help='name of dataset file in data directory', \
                         required=False, default='mnist_test_seq')
@@ -37,6 +40,8 @@ def get_args():
                         help='number of training examples', required=False, type=int, default=50000)
     parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', \
                         help='number of stacked frames', required=False, type=int, default=2)
+    parser.add_argument('--num-channels', metavar='NUM_CHANNELS', dest='num_channels', \
+                        help='number of channels in input image', required=False, type=int, default=1)
     parser.add_argument('--num-pairs', metavar='NUM_PAIRS_PER_EXAMPLE', dest='num_pairs', \
                         help='number of pairs per video', required=False, type=int, default=5)
     parser.add_argument('--use-pool', action='store_true', \

@@ -24,7 +24,7 @@ args = get_args()
 PROJECT_DIR = args.project_dir
 DATA_DIR,  PLOTS_DIR, LOGGING_DIR = args.data_dir, 'plots', 'logs'
 CHECKPOINTS_DIR, CHECKPOINT_FILE = args.checkpoints_dir, args.load_ckpt
-DATASET, DATA_EXT = args.dataset, args.data_ext
+DATASET_TYPE, DATASET, DATA_EXT = args.dataset_type, args.dataset, args.data_ext
 OFFLINE = args.offline
 
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
@@ -50,6 +50,7 @@ if args.device_id and 'cuda' in DEVICE:
     torch.cuda.set_device(DEVICE_ID)
 
 NUM_FRAMES_IN_STACK = args.num_frames       # number of (total) frames to concatenate for each video
+NUM_CHANNELS = args.num_channels            # number of channels in each input image frame
 NUM_PAIRS_PER_EXAMPLE = args.num_pairs      # number of pairs to generate for given video and time difference
 USE_POOL = args.use_pool                    # use pooling instead of strided convolutions
 USE_RES = args.use_res                      # use residual layers
@@ -69,17 +70,17 @@ def main():
                                                                                 TIME_BUCKETS, BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
                                                                                 NUM_FRAMES_IN_STACK, DATA_EXT, args.force)
     else:
-        train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, \
+        train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, \
                                                             NUM_TRAIN, 'train', TIME_BUCKETS, BATCH_SIZE, \
-                                                            NUM_FRAMES_IN_STACK, DATA_EXT)
-        val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_VAL, 'val', \
-                                        TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
-        test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, NUM_TEST, 'test', \
-                                        TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, DATA_EXT, transforms)
+                                                            NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT)
+        val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_VAL, 'val', \
+                                        TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, transforms)
+        test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_TEST, 'test', \
+                                        TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, transforms)
 
     # Network hyperparameters
     img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
-    in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK, 1024
+    in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 1024
     embedding_hidden_size, classification_hidden_size = 1024, 1024
     num_outputs = len(TIME_BUCKETS)
 
