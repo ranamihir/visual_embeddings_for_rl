@@ -287,7 +287,7 @@ class RandomMovingMNISTDataset(Dataset):
 
 
 class MazeDataset(Dataset):
-    def __init__(self, data, time_buckets, num_frames_in_stack=4, num_channels=3, size=300000, transforms=None):
+    def __init__(self, data, time_buckets, num_frames_in_stack=4, num_channels=3, size=300000):
         self.data = data
         self.size = size
         self.num_frames_in_stack = num_frames_in_stack
@@ -302,9 +302,8 @@ class MazeDataset(Dataset):
 
         (x1, x2), difference, (frame1, frame2) = self._get_sample_at_difference(video_idx, y)
 
-        if self.transforms:
-            x1 = self.transforms(x1)
-            x2 = self.transforms(x2)
+        x1 = x1.clamp(0, 10) / 10
+        x2 = x2.clamp(0, 10) / 10
 
         y = torch.from_numpy(np.array(y))
 

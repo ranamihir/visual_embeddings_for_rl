@@ -25,9 +25,9 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
         data = load_maze_data(project_dir, data_dir, dataset_name, data_type)
         assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
 
+        dataset = MazeDataset(data, time_buckets, num_frames_in_stack, \
+                              num_channels, dataset_size)
         transforms = None
-        dataset = MazeDataset(data, time_buckets, num_frames_in_stack, num_channels, \
-                            dataset_size, transforms=transforms)
 
     # Fixed Moving MNIST Dataset
     elif dataset_type == 'fixed_mmnist':
