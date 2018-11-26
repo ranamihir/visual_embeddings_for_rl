@@ -13,8 +13,8 @@ from capstone_project.utils import imshow, plot_video, save_object, load_object
 
 def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
                             dataset_name, dataset_size, data_type, time_buckets, \
-                            batch_size, num_frames_in_stack=2, num_channels=1, \
-                            ext='.npy', transforms=None):
+                            model, batch_size, num_frames_in_stack=2, \
+                            num_channels=1, ext='.npy', transforms=None):
     assert dataset_type in ['maze', 'random_mmnist', 'fixed_mmnist'], \
         'Unknown dataset type "{}" passed.'.format(dataset_type)
 
@@ -24,9 +24,10 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
     if dataset_type == 'maze':
         data = load_maze_data(project_dir, data_dir, dataset_name, data_type)
         assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
+        assert model in ['rel', 'classic'], 'Unknown model name "{}" passed.'.format(model)
 
         dataset = MazeDataset(data, time_buckets, num_frames_in_stack, \
-                              num_channels, dataset_size)
+                              num_channels, dataset_size, True if model == 'rel' else False)
         transforms = None
 
     # Fixed Moving MNIST Dataset

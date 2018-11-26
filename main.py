@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from capstone_project.arguments import get_args
 from capstone_project.preprocessing import generate_all_offline_dataloaders, generate_online_dataloader
-from capstone_project.models.embedding_network import EmbeddingNetwork
+from capstone_project.models.embedding_network import EmbeddingNetwork, RelativeNetwork
 from capstone_project.models.classification_network import ClassificationNetwork
 from capstone_project.utils import *
 
@@ -26,6 +26,7 @@ DATA_DIR,  PLOTS_DIR, LOGGING_DIR = args.data_dir, 'plots', 'logs'
 CHECKPOINTS_DIR, CHECKPOINT_FILE = args.checkpoints_dir, args.load_ckpt
 DATASET_TYPE, DATASET, DATA_EXT = args.dataset_type, args.dataset, args.data_ext
 OFFLINE = args.offline
+MODEL = args.model
 
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
 if not OFFLINE:
@@ -71,24 +72,31 @@ def main():
                                                                                 NUM_FRAMES_IN_STACK, DATA_EXT, args.force)
     else:
         train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, \
-                                                            NUM_TRAIN, 'train', TIME_BUCKETS, BATCH_SIZE, \
+                                                            NUM_TRAIN, 'train', TIME_BUCKETS, MODEL, BATCH_SIZE, \
                                                             NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT)
         val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_VAL, 'val', \
-                                        TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, transforms)
+                                        TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
+                                        DATA_EXT, transforms)
         test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_TEST, 'test', \
-                                        TIME_BUCKETS, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, transforms)
+                                        TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
+                                        DATA_EXT, transforms)
 
     # Network hyperparameters
     img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
-    in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 1024
-    embedding_hidden_size, classification_hidden_size = 1024, 1024
+    in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 512
+    embedding_hidden_size, classification_hidden_size = 512, 512
     num_outputs = len(TIME_BUCKETS)
 
     start_epoch = 0 # Initialize starting epoch number (used later if checkpoint loaded)
     stop_epoch = N_EPOCHS+start_epoch # Store epoch upto which model is trained (used in case of KeyboardInterrupt)
 
     logging.info('Creating models...')
-    embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
+    if MODEL == 'classic':
+        embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
+    elif MODEL == 'rel':
+        embedding_network = RelativeNetwork(embedding_hidden_size, out_dim)
+    else:
+        raise ValueError('Unknown model name "{}" passed.'.format(MODEL))
     classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs)
     logging.info('Done.')
 

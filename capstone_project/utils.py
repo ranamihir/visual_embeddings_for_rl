@@ -20,7 +20,7 @@ def train(embedding_network, classification_network, dataloader, criterion, opti
     loss_hist = []
     dataloader_iterator = enumerate(dataloader) if offline else enumerate(islice(dataloader, len(dataloader)))
     for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
-        x1, x2, y = x1.to(device).float(), x2.to(device).float(), y.to(device).long()
+        x1, x2, y = x1.to(device), x2.to(device), y.to(device)
         embedding_network.train()
         classification_network.train()
 
@@ -56,7 +56,7 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
     with torch.no_grad():
         dataloader_iterator = enumerate(dataloader) if offline else enumerate(islice(dataloader, len(dataloader)))
         for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
-            x1, x2, y = x1.to(device).float(), x2.to(device).float(), y.to(device).long()
+            x1, x2, y = x1.to(device), x2.to(device), y.to(device)
             embedding_output1 = embedding_network(x1)
             embedding_output2 = embedding_network(x2)
             classification_output = classification_network(embedding_output1, embedding_output2)

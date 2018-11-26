@@ -1,6 +1,7 @@
 import logging
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def conv3x3(in_channels, out_channels, stride=1, padding=1, bias=False):
@@ -162,3 +163,48 @@ class EmbeddingNetwork(nn.Module):
         num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         logging.info('Number of trainable parameters in EmbeddingNetwork: {}'.format(num_params))
         return num_params
+
+
+class RelativeNetwork(nn.Module):
+    def __init__(self, hidden_size, out_dim):
+        super(RelativeNetwork, self).__init__()
+        self.emb = nn.Embedding(11, 8)
+        self.conv1 = nn.Conv2d(3 * 8, 16, kernel_size=5, padding=2)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
+        self.conv1x1 = nn.Conv2d(64 + 2, 256, kernel_size=1)
+        self.fc1 = nn.Linear(256, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, out_dim)
+        self.dropout = nn.Dropout(p=0.5)
+
+    def forward(self, x):
+        x = self.emb(x)
+        x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
+
+        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.relu(F.max_pool2d(self.conv2(x), 2))
+
+        coords = torch.linspace(0, x.size(-1) - 1, x.size(-1)).to(x.device) / x.size(-1)
+        x_coords = coords.unsqueeze(0).unsqueeze(0).unsqueeze(-1).repeat(x.size(0) ,1, 1, x.size(-1))
+        y_coords = coords.unsqueeze(0).unsqueeze(0).unsqueeze(-2).repeat(x.size(0), 1, x.size(-1), 1)
+        xy_coord = torch.cat([x_coords, y_coords], 1) # Creates a 2D grid
+        xy_coord = xy_coord.view(xy_coord.size(0), xy_coord.size(1), -1) # 2D->1D
+
+        offsets = xy_coord.unsqueeze(-1) - xy_coord.unsqueeze(-2) # Creates offsets for all pixels
+        x = x.view(x.size(0), x.size(1), -1) # 2D->1D
+
+        x_ = x.unsqueeze(-1).repeat(1, 1, 1, x.size(-1))
+        _x = x.unsqueeze(-2).repeat(1, 1, x.size(-1), 1)
+        x = torch.cat([offsets, x_, _x], 1) # Concatenate every pixel with every pixel
+
+        x = F.relu(self.conv1x1(x)) # Do 1x1 convolution to combine information from all pairs
+
+        x = F.avg_pool2d(x, x.size(-1), x.size(-1)).squeeze(-1).squeeze(-1) # Global aggregation of this information
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+
+        # Zero centering and l2 normalization
+        x = x - x.mean()
+        x = x / torch.norm(x, p=2, dim=1, keepdim=True)
+
+        return x

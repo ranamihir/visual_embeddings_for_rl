@@ -19,6 +19,8 @@ def get_args():
                         required=False, default='data')
     parser.add_argument('--offline', action='store_true', \
                         help='use offline preprocessing of data loader')
+    parser.add_argument('--model', metavar='MODEL', dest='model', \
+                        help='name of embedding network', required=False, default='classic')
     parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', \
                         help='path to checkpoints directory', required=False, default='checkpoints')
     parser.add_argument('--load-ckpt', metavar='LOAD_CHECKPOINT', dest='load_ckpt', \

@@ -32,7 +32,7 @@ class FixedMovingMNISTDataset(Dataset):
 
         y = torch.from_numpy(np.array(y))
 
-        return x1, x2, y, difference, (frame1, frame2)
+        return x1.float(), x2.float(), y.long(), difference, (frame1, frame2)
 
     def __len__(self):
         return self.size
@@ -221,7 +221,7 @@ class RandomMovingMNISTDataset(Dataset):
 
         y = torch.from_numpy(np.array(y))
 
-        return x1, x2, y, difference, (frame1, frame2)
+        return x1.float(), x2.float(), y.long(), difference, (frame1, frame2)
 
     def __len__(self):
         return self.size
@@ -287,7 +287,7 @@ class RandomMovingMNISTDataset(Dataset):
 
 
 class MazeDataset(Dataset):
-    def __init__(self, data, time_buckets, num_frames_in_stack=4, num_channels=3, size=300000):
+    def __init__(self, data, time_buckets, num_frames_in_stack=4, num_channels=3, size=300000, is_rel_net=False):
         self.data = data
         self.size = size
         self.num_frames_in_stack = num_frames_in_stack
@@ -295,19 +295,23 @@ class MazeDataset(Dataset):
         self.time_buckets_dict = self._get_time_buckets_dict(time_buckets)
         self._check_data()
         self.transforms = transforms
+        self.is_rel_net = is_rel_net
 
     def __getitem__(self, index):
         video_idx = np.random.choice(len(self.data))
         y = np.random.choice(list(self.time_buckets_dict.keys()))
 
         (x1, x2), difference, (frame1, frame2) = self._get_sample_at_difference(video_idx, y)
-
-        x1 = x1.clamp(0, 10) / 10
-        x2 = x2.clamp(0, 10) / 10
-
         y = torch.from_numpy(np.array(y))
 
-        return x1, x2, y, difference, (frame1, frame2)
+        if self.is_rel_net:
+            x1 = x1.clamp(0, 10)
+            x2 = x2.clamp(0, 10)
+            return x1.long(), x2.long(), y.long(), difference, (frame1, frame2)
+        else:
+            x1 = x1.clamp(0, 10) / 10
+            x2 = x2.clamp(0, 10) / 10
+            return x1.float(), x2.float(), y.long(), difference, (frame1, frame2)
 
     def __len__(self):
         return self.size
@@ -390,7 +394,7 @@ class OfflineMovingMNISTDataset(Dataset):
             x1 = self.transforms(x1)
             x2 = self.transforms(x2)
 
-        return x1, x2, y, difference, (frame1, frame2)
+        return x1.float(), x2.float(), y.long(), difference, (frame1, frame2)
 
     def __len__(self):
         return len(self.y)
