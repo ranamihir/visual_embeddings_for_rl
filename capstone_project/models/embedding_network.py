@@ -20,18 +20,18 @@ class ResidualBlock(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
-    def forward(self, input):
-        residual = input
-        output = self.conv1(input)
-        output = self.bn1(output)
-        output = self.relu(output)
-        output = self.conv2(output)
-        output = self.bn2(output)
+    def forward(self, x):
+        residual = x
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
         if self.downsample:
-            residual = self.downsample(input)
-        output += residual
-        output = self.relu(output)
-        return output
+            residual = self.downsample(x)
+        x += residual
+        x = self.relu(x)
+        return x
 
 
 class CNNNetwork(nn.Module):
@@ -72,38 +72,38 @@ class CNNNetwork(nn.Module):
         self._init_weights() # Initialize weights
         self._get_trainable_params() # Print number of trainable parameters
 
-    def forward(self, input):
+    def forward(self, x):
         # Reshape input to batch_size x in_channels x height x width
-        input = input.view(-1, self.in_channels, self.in_dim, self.in_dim)
+        x = x.view(-1, self.in_channels, self.in_dim, self.in_dim)
 
-        output = self.conv1(input)
-        output = self.bn1(output)
-        output = self.relu(output)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
 
-        output = self.conv2(output)
-        output = self.bn2(output)
-        output = self.relu(output)
-        output = self.downsample1(output)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.downsample1(x)
 
 
-        output = self.conv3(output)
-        output = self.bn3(output)
-        output = self.relu(output)
-        output = self.downsample2(output)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.downsample2(x)
 
         if self.use_res:
-            output = self.residual_layers(output)
+            x = self.residual_layers(x)
 
-        output = output.view(output.size(0), -1)
-        output = self.fc1(output)
-        output = self.relu(output)
-        output = self.fc2(output)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
 
         # Zero centering and l2 normalization
-        output = output - output.mean()
-        output = output / torch.norm(output, p=2, dim=1, keepdim=True)
+        x = x - x.mean()
+        x = x / torch.norm(x, p=2, dim=1, keepdim=True)
 
-        return output
+        return x
 
     def _make_layer(self, block, in_channels, out_channels, num_blocks, stride=1, downsample=None):
         if (not downsample) and ((stride != 1) or (in_channels != out_channels)):
@@ -168,24 +168,58 @@ class CNNNetwork(nn.Module):
 class EmbeddingCNNNetwork(nn.Module):
     def __init__(self, in_dim, in_channels, embedding_size, hidden_size, out_dim):
         super(EmbeddingCNNNetwork, self).__init__()
+        self.in_dim = in_dim
+        self.in_channels = in_channels
+
         self.embedding = nn.Embedding(11, embedding_size)
-        self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
-        self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 32, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, out_dim)
-        self.dropout = nn.Dropout(p=0.5)
+
+        # Conv-ReLU layers with batch-norm
+        self.conv1 = conv3x3(in_channels * embedding_size, 32)
+        self.bn1 = nn.BatchNorm2d(32)
+
+        # Conv-ReLU layers with batch-norm and downsampling
+        self.conv2 = conv3x3(32, 64)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.downsample1 = nn.MaxPool2d(2)
+
+        # Conv-ReLU layers with batch-norm and downsampling
+        self.conv3 = conv3x3(64, 64)
+        self.bn3 = nn.BatchNorm2d(64)
+        self.downsample2 = nn.MaxPool2d(2)
+
+        self.relu = nn.ReLU(inplace=True)
+
+        # Fully connected layers
+        self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 64, 256)
+        self.fc2 = nn.Linear(256, out_dim)
 
         self._init_weights() # Initialize weights
         self._get_trainable_params() # Print number of trainable parameters
 
     def forward(self, x):
+        # Reshape input to batch_size x in_channels x height x width
+        x = x.view(-1, self.in_channels, self.in_dim, self.in_dim)
+
         x = self.embedding(x)
         x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2(x), 2))
+
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.downsample1(x)
+
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.downsample2(x)
+
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.dropout(x)
+        x = self.fc1(x)
+        x = self.relu(x)
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
@@ -209,6 +243,57 @@ class EmbeddingCNNNetwork(nn.Module):
         num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         logging.info('Number of trainable parameters in EmbeddingNetwork: {}'.format(num_params))
         return num_params
+
+
+# class EmbeddingCNNNetwork(nn.Module):
+#     def __init__(self, in_dim, in_channels, embedding_size, hidden_size, out_dim):
+#         super(EmbeddingCNNNetwork, self).__init__()
+#         self.embedding = nn.Embedding(11, embedding_size)
+#         self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
+#         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
+#         self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 32, hidden_size)
+#         self.fc2 = nn.Linear(hidden_size, out_dim)
+#         self.bn1 = nn.BatchNorm2d(16)
+#         self.bn2 = nn.BatchNorm2d(32)
+#         self.dropout = nn.Dropout(p=0.5)
+
+#         self._init_weights() # Initialize weights
+#         self._get_trainable_params() # Print number of trainable parameters
+
+#     def forward(self, x):
+#         #import ipdb; ipdb.set_trace()
+#         x = self.embedding(x)
+#         x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
+#         x = self.bn1(self.conv1(x))
+#         x = F.relu(F.max_pool2d(x, 2))
+#         x = self.bn2(self.conv2(x))
+#         x = F.relu(F.max_pool2d(x, 2))
+#         x = x.view(x.size(0), -1)
+#         x = F.relu(self.fc1(x))
+#         # x = self.dropout(x)
+#         x = self.fc2(x)
+
+#         # # Zero centering and l2 normalization
+#         # x = x - x.mean()
+#         x = x / torch.norm(x, p=2, dim=1, keepdim=True)
+
+#         return x
+
+#     def _init_weights(self):
+#         for m in self.modules():
+#             if isinstance(m, nn.Conv2d):
+#                 nn.init.xavier_normal_(m.weight)
+#             elif isinstance(m, nn.BatchNorm2d):
+#                 nn.init.constant_(m.weight, 1)
+#                 nn.init.constant_(m.bias, 0)
+#             elif isinstance(m, nn.Linear):
+#                 nn.init.xavier_normal_(m.weight)
+#                 nn.init.uniform_(m.bias)
+
+#     def _get_trainable_params(self):
+#         num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+#         logging.info('Number of trainable parameters in EmbeddingNetwork: {}'.format(num_params))
+#         return num_params
 
 
 class RelativeNetwork(nn.Module):
@@ -249,7 +334,7 @@ class RelativeNetwork(nn.Module):
 
         x = F.avg_pool2d(x, x.size(-1), x.size(-1)).squeeze(-1).squeeze(-1) # Global aggregation of this information
         x = F.relu(self.fc1(x))
-        x = self.dropout(x)
+        # x = self.dropout(x)
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
