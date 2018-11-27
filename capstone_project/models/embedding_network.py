@@ -34,9 +34,9 @@ class ResidualBlock(nn.Module):
         return output
 
 
-class EmbeddingNetwork(nn.Module):
+class CNNNetwork(nn.Module):
     def __init__(self, in_dim, in_channels, hidden_size, out_dim, block=ResidualBlock, num_blocks=3, use_pool=False, use_res=False):
-        super(EmbeddingNetwork, self).__init__()
+        super(CNNNetwork, self).__init__()
         self.in_dim = in_dim
         self.in_channels = in_channels
         self.use_pool = use_pool
@@ -165,16 +165,65 @@ class EmbeddingNetwork(nn.Module):
         return num_params
 
 
+class EmbeddingCNNNetwork(nn.Module):
+    def __init__(self, in_dim, in_channels, embedding_size, hidden_size, out_dim):
+        super(EmbeddingCNNNetwork, self).__init__()
+        self.emb = nn.Embedding(11, embedding_size)
+        self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
+        self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 32, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, out_dim)
+        self.dropout = nn.Dropout(p=0.5)
+
+        self._init_weights() # Initialize weights
+        self._get_trainable_params() # Print number of trainable parameters
+
+    def forward(self, x):
+        x = self.emb(x)
+        x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
+        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.relu(F.max_pool2d(self.conv2(x), 2))
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+
+        # Zero centering and l2 normalization
+        x = x - x.mean()
+        x = x / torch.norm(x, p=2, dim=1, keepdim=True)
+
+        return x
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                nn.init.uniform_(m.bias)
+
+    def _get_trainable_params(self):
+        num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        logging.info('Number of trainable parameters in EmbeddingNetwork: {}'.format(num_params))
+        return num_params
+
+
 class RelativeNetwork(nn.Module):
-    def __init__(self, hidden_size, out_dim):
+    def __init__(self, in_channels, embedding_size, hidden_size, out_dim):
         super(RelativeNetwork, self).__init__()
-        self.emb = nn.Embedding(11, 8)
-        self.conv1 = nn.Conv2d(3 * 8, 16, kernel_size=5, padding=2)
+        self.emb = nn.Embedding(11, embedding_size)
+        self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
         self.conv1x1 = nn.Conv2d(64 + 2, 256, kernel_size=1)
         self.fc1 = nn.Linear(256, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_dim)
         self.dropout = nn.Dropout(p=0.5)
+
+        self._init_weights() # Initialize weights
+        self._get_trainable_params() # Print number of trainable parameters
 
     def forward(self, x):
         x = self.emb(x)
@@ -208,3 +257,19 @@ class RelativeNetwork(nn.Module):
         x = x / torch.norm(x, p=2, dim=1, keepdim=True)
 
         return x
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                nn.init.uniform_(m.bias)
+
+    def _get_trainable_params(self):
+        num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        logging.info('Number of trainable parameters in EmbeddingNetwork: {}'.format(num_params))
+        return num_params

@@ -24,10 +24,11 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
     if dataset_type == 'maze':
         data = load_maze_data(project_dir, data_dir, dataset_name, data_type)
         assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
-        assert model in ['rel', 'classic'], 'Unknown model name "{}" passed.'.format(model)
+        assert model in ['cnn', 'emb-cnn', 'rel'], 'Unknown model name "{}" passed.'.format(model)
 
         dataset = MazeDataset(data, time_buckets, num_frames_in_stack, \
-                              num_channels, dataset_size, True if model == 'rel' else False)
+                              num_channels, dataset_size, return_embedding=False \
+                              if model == 'cnn' else True)
         transforms = None
 
     # Fixed Moving MNIST Dataset

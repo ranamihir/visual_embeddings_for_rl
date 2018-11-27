@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 
 from capstone_project.arguments import get_args
 from capstone_project.preprocessing import generate_all_offline_dataloaders, generate_online_dataloader
-from capstone_project.models.embedding_network import EmbeddingNetwork, RelativeNetwork
-from capstone_project.models.classification_network import ClassificationNetwork
+from capstone_project.models.embedding_network import *
+from capstone_project.models.classification_network import *
 from capstone_project.utils import *
 
 
@@ -81,29 +81,36 @@ def main():
                                         TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
                                         DATA_EXT, transforms)
 
-    # Network hyperparameters
-    img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
-    in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 512
-    embedding_hidden_size, classification_hidden_size = 512, 512
-    num_outputs = len(TIME_BUCKETS)
-
-    start_epoch = 0 # Initialize starting epoch number (used later if checkpoint loaded)
-    stop_epoch = N_EPOCHS+start_epoch # Store epoch upto which model is trained (used in case of KeyboardInterrupt)
-
+    # Declare Network and Hyperparameters
     logging.info('Creating models...')
-    if MODEL == 'classic':
-        embedding_network = EmbeddingNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
+    img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
+    num_outputs = len(TIME_BUCKETS)
+    if MODEL == 'cnn':
+        in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 1024
+        embedding_hidden_size, classification_hidden_size = 1024, 1024
+        embedding_network = CNNNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
+    elif MODEL == 'emb-cnn':
+        in_dim, in_channels, out_dim = img_dim, NUM_CHANNELS, 512
+        embedding_size, embedding_hidden_size, classification_hidden_size = 8, 512, 512
+        embedding_network = EmbeddingCNNNetwork(in_dim, in_channels, embedding_size, embedding_hidden_size, out_dim)
     elif MODEL == 'rel':
-        embedding_network = RelativeNetwork(embedding_hidden_size, out_dim)
+        in_channels, out_dim = NUM_CHANNELS, 512
+        embedding_size, embedding_hidden_size, classification_hidden_size = 8, 512, 512
+        embedding_network = RelativeNetwork(in_channels, embedding_size, embedding_hidden_size, out_dim)
     else:
         raise ValueError('Unknown model name "{}" passed.'.format(MODEL))
     classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs)
     logging.info('Done.')
+    logging.info(embedding_network)
+    logging.info(classification_network)
 
     # Define criteria and optimizer
     criterion_train = nn.CrossEntropyLoss()
     criterion_test = nn.CrossEntropyLoss(reduction='sum')
     optimizer = optim.Adam(list(embedding_network.parameters()) + list(classification_network.parameters()), lr=LR)
+
+    start_epoch = 0 # Initialize starting epoch number (used later if checkpoint loaded)
+    stop_epoch = N_EPOCHS+start_epoch # Store epoch upto which model is trained (used in case of KeyboardInterrupt)
 
     train_loss_history, train_accuracy_history = [], []
     val_loss_history, val_accuracy_history = [], []
