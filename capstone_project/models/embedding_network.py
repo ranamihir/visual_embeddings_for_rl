@@ -20,18 +20,18 @@ class ResidualBlock(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
-    def forward(self, input):
-        residual = input
-        output = self.conv1(input)
-        output = self.bn1(output)
-        output = self.relu(output)
-        output = self.conv2(output)
-        output = self.bn2(output)
+    def forward(self, x):
+        residual = x
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
         if self.downsample:
-            residual = self.downsample(input)
-        output += residual
-        output = self.relu(output)
-        return output
+            residual = self.downsample(x)
+        x += residual
+        x = self.relu(x)
+        return x
 
 
 class CNNNetwork(nn.Module):
@@ -72,38 +72,38 @@ class CNNNetwork(nn.Module):
         self._init_weights() # Initialize weights
         self._get_trainable_params() # Print number of trainable parameters
 
-    def forward(self, input):
+    def forward(self, x):
         # Reshape input to batch_size x in_channels x height x width
-        input = input.view(-1, self.in_channels, self.in_dim, self.in_dim)
+        x = x.view(-1, self.in_channels, self.in_dim, self.in_dim)
 
-        output = self.conv1(input)
-        output = self.bn1(output)
-        output = self.relu(output)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
 
-        output = self.conv2(output)
-        output = self.bn2(output)
-        output = self.relu(output)
-        output = self.downsample1(output)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.downsample1(x)
 
 
-        output = self.conv3(output)
-        output = self.bn3(output)
-        output = self.relu(output)
-        output = self.downsample2(output)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.downsample2(x)
 
         if self.use_res:
-            output = self.residual_layers(output)
+            x = self.residual_layers(x)
 
-        output = output.view(output.size(0), -1)
-        output = self.fc1(output)
-        output = self.relu(output)
-        output = self.fc2(output)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
 
         # Zero centering and l2 normalization
-        output = output - output.mean()
-        output = output / torch.norm(output, p=2, dim=1, keepdim=True)
+        x = x - x.mean()
+        x = x / torch.norm(x, p=2, dim=1, keepdim=True)
 
-        return output
+        return x
 
     def _make_layer(self, block, in_channels, out_channels, num_blocks, stride=1, downsample=None):
         if (not downsample) and ((stride != 1) or (in_channels != out_channels)):

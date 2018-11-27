@@ -15,14 +15,14 @@ class ClassificationNetwork(nn.Module):
         self._init_weights() # Initialize weights
         self._get_trainable_params() # Print number of trainable parameters
 
-    def forward(self, embedding_output1, embedding_output2):
-        input = embedding_output1 * embedding_output2
-        input = input.view(input.size(0), -1) # Reshape input to batch_size x num_inputs
-        output = self.fc1(input)
-        output = self.relu(output)
-        output = self.dropout(output)
-        output = self.fc2(output)
-        return output
+    def forward(self, x1, x2):
+        x = x1 * x2
+        x = x.view(x.size(0), -1) # Reshape input to batch_size x num_inputs
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
 
     def _init_weights(self):
         for m in self.modules():
