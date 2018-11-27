@@ -168,7 +168,7 @@ class CNNNetwork(nn.Module):
 class EmbeddingCNNNetwork(nn.Module):
     def __init__(self, in_dim, in_channels, embedding_size, hidden_size, out_dim):
         super(EmbeddingCNNNetwork, self).__init__()
-        self.emb = nn.Embedding(11, embedding_size)
+        self.embedding = nn.Embedding(11, embedding_size)
         self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
         self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 32, hidden_size)
@@ -179,7 +179,7 @@ class EmbeddingCNNNetwork(nn.Module):
         self._get_trainable_params() # Print number of trainable parameters
 
     def forward(self, x):
-        x = self.emb(x)
+        x = self.embedding(x)
         x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2(x), 2))
@@ -214,7 +214,7 @@ class EmbeddingCNNNetwork(nn.Module):
 class RelativeNetwork(nn.Module):
     def __init__(self, in_channels, embedding_size, hidden_size, out_dim):
         super(RelativeNetwork, self).__init__()
-        self.emb = nn.Embedding(11, embedding_size)
+        self.embedding = nn.Embedding(11, embedding_size)
         self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
         self.conv1x1 = nn.Conv2d(64 + 2, 256, kernel_size=1)
@@ -226,7 +226,7 @@ class RelativeNetwork(nn.Module):
         self._get_trainable_params() # Print number of trainable parameters
 
     def forward(self, x):
-        x = self.emb(x)
+        x = self.embedding(x)
         x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
 
         x = F.relu(F.max_pool2d(self.conv1(x), 2))

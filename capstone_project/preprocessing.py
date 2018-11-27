@@ -26,9 +26,8 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
         assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
         assert model in ['cnn', 'emb-cnn', 'rel'], 'Unknown model name "{}" passed.'.format(model)
 
-        dataset = MazeDataset(data, time_buckets, num_frames_in_stack, \
-                              num_channels, dataset_size, return_embedding=False \
-                              if model == 'cnn' else True)
+        dataset = MazeDataset(data, time_buckets, num_channels, dataset_size, \
+                              return_embedding=False if model == 'cnn' else True)
         transforms = None
 
     # Fixed Moving MNIST Dataset
@@ -167,10 +166,10 @@ def load_maze_data(project_dir, data_dir, filename, data_type):
     else:
         all_data = split_and_dump_maze_data(project_dir, data_dir, filename, data_type)
 
-    min_seq_len = all_data[0].shape[0]
-    for video in all_data:
-        min_seq_len = min(min_seq_len, video.shape[0])
-    logging.info('Min sequence length in {} data: {}'.format(data_type, min_seq_len))
+    seq_lens = np.array([video.shape[0] for video in all_data])
+    logging.info('Min/Max/Avg/Total sequence length in {} data: '\
+                 '{:.0f}/{:.0f}/{:.0f}/{:.0f}'.format(data_type, \
+                 np.min(seq_lens), np.max(seq_lens), np.mean(seq_lens), np.sum(seq_lens)))
     return all_data
 
 def split_and_dump_maze_data(project_dir, data_dir, filename, data_type, val_size=0.2, test_size=0.2):

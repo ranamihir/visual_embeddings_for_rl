@@ -287,10 +287,9 @@ class RandomMovingMNISTDataset(Dataset):
 
 
 class MazeDataset(Dataset):
-    def __init__(self, data, time_buckets, num_frames_in_stack=4, num_channels=3, size=300000, return_embedding=False):
+    def __init__(self, data, time_buckets, num_channels=3, size=300000, return_embedding=False):
         self.data = data
         self.size = size
-        self.num_frames_in_stack = num_frames_in_stack
         self.num_channels = num_channels
         self.time_buckets_dict = self._get_time_buckets_dict(time_buckets)
         self._check_data()
