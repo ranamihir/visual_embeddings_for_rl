@@ -86,12 +86,12 @@ def main():
     img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
     num_outputs = len(TIME_BUCKETS)
     if MODEL == 'cnn':
-        in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 1024
-        embedding_hidden_size, classification_hidden_size = 1024, 1024
+        in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 256
+        embedding_hidden_size, classification_hidden_size = 256, 256
         embedding_network = CNNNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
     elif MODEL == 'emb-cnn':
-        in_dim, in_channels, out_dim = img_dim, NUM_CHANNELS, 512
-        embedding_size, embedding_hidden_size, classification_hidden_size = 8, 512, 512
+        in_dim, in_channels, out_dim = img_dim, NUM_CHANNELS, 256
+        embedding_size, embedding_hidden_size, classification_hidden_size = 8, 256, 256
         embedding_network = EmbeddingCNNNetwork(in_dim, in_channels, embedding_size, embedding_hidden_size, out_dim)
     elif MODEL == 'rel':
         in_channels, out_dim = NUM_CHANNELS, 512
