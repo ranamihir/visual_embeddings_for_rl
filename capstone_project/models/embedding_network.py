@@ -42,16 +42,16 @@ class CNNNetwork(nn.Module):
         self.use_pool = use_pool
         self.use_res = use_res
 
-        # Conv-ReLU layers with batch-norm
+        # Conv layers with batch-norm
         self.conv1 = conv3x3(in_channels, 32)
         self.bn1 = nn.BatchNorm2d(32)
 
-        # Conv-ReLU layers with batch-norm and downsampling
+        # Conv layers with batch-norm and downsampling
         self.conv2 = conv3x3(32, 64)
         self.bn2 = nn.BatchNorm2d(64)
         self.downsample1 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=2)
 
-        # Conv-ReLU layers with batch-norm and downsampling
+        # Conv layers with batch-norm and downsampling
         self.conv3 = conv3x3(64, 64)
         self.bn3 = nn.BatchNorm2d(64)
         self.downsample2 = nn.MaxPool2d(2) if use_pool else conv3x3(64, 64, stride=2)
@@ -73,9 +73,6 @@ class CNNNetwork(nn.Module):
         self._get_trainable_params() # Print number of trainable parameters
 
     def forward(self, x):
-        # Reshape input to batch_size x in_channels x height x width
-        x = x.view(-1, self.in_channels, self.in_dim, self.in_dim)
-
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -165,27 +162,57 @@ class CNNNetwork(nn.Module):
         return num_params
 
 
-class EmbeddingCNNNetwork(nn.Module):
-    def __init__(self, in_dim, in_channels, embedding_size, hidden_size, out_dim):
-        super(EmbeddingCNNNetwork, self).__init__()
-        self.embedding = nn.Embedding(11, embedding_size)
-        self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
-        self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 32, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, out_dim)
-        self.dropout = nn.Dropout(p=0.5)
+class EmbeddingCNNNetwork1(nn.Module):
+    def __init__(self, in_dim, embedding_size, hidden_size, out_dim):
+        super(EmbeddingCNNNetwork1, self).__init__()
+
+        # Initial embeddings for each channel
+        self.emb0 = nn.Embedding(11, embedding_size)
+        self.emb1 = nn.Embedding(6, embedding_size)
+        self.emb2 = nn.Embedding(2, embedding_size)
+
+        # Conv layers with batch-norm
+        self.conv1 = conv3x3(3 * embedding_size, 32)
+        self.bn1 = nn.BatchNorm2d(32)
+
+        # Conv layers with batch-norm and downsampling
+        self.conv2 = conv3x3(32, 64)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.downsample1 = nn.MaxPool2d(2)
+        self.conv3 = conv3x3(64, 64)
+        self.bn3 = nn.BatchNorm2d(64)
+        self.downsample2 = nn.MaxPool2d(2)
+
+        self.relu = nn.ReLU(inplace=True)
+
+        # Fully connected layers
+        self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 64, 256)
+        self.fc2 = nn.Linear(256, out_dim)
 
         self._init_weights() # Initialize weights
         self._get_trainable_params() # Print number of trainable parameters
 
     def forward(self, x):
-        x = self.embedding(x)
-        x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2(x), 2))
+        x = torch.cat([self.emb0(x[:, 0]), self.emb1(x[:, 1]), self.emb2(x[:, 2])], -1)
+        x = x.permute([0, 3, 1, 2]).contiguous()
+
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.downsample1(x)
+
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.downsample2(x)
+
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.dropout(x)
+        x = self.fc1(x)
+        x = self.relu(x)
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
@@ -204,6 +231,68 @@ class EmbeddingCNNNetwork(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight)
                 nn.init.uniform_(m.bias)
+            elif isinstance(m, nn.Embedding):
+                nn.init.orthogonal_(m.weight.data)
+
+    def _get_trainable_params(self):
+        num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        logging.info('Number of trainable parameters in EmbeddingNetwork: {}'.format(num_params))
+        return num_params
+
+
+class EmbeddingCNNNetwork2(nn.Module):
+    def __init__(self, in_dim, embedding_size, hidden_size, out_dim):
+        super(EmbeddingCNNNetwork2, self).__init__()
+
+        # Initial embeddings for each channel
+        self.emb0 = nn.Embedding(11, embedding_size)
+        self.emb1 = nn.Embedding(6, embedding_size)
+        self.emb2 = nn.Embedding(2, embedding_size)
+
+        # Conv layers with batch-norm
+        self.conv1 = nn.Conv2d(3 * embedding_size, 16, kernel_size=5, padding=2)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
+        self.bn2 = nn.BatchNorm2d(32)
+
+        # Fully connected layers
+        self.fc1 = nn.Linear((in_dim//4) * (in_dim//4) * 32, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, out_dim)
+
+        self.dropout = nn.Dropout(p=0.5)
+
+        self._init_weights() # Initialize weights
+        self._get_trainable_params() # Print number of trainable parameters
+
+    def forward(self, x):
+        x = torch.cat([self.emb0(x[:, 0]), self.emb1(x[:, 1]), self.emb2(x[:, 2])], -1)
+        x = x.permute([0, 3, 1, 2]).contiguous()
+        x = self.bn1(self.conv1(x))
+        x = F.relu(F.max_pool2d(x, 2))
+        x = self.bn2(self.conv2(x))
+        x = F.relu(F.max_pool2d(x, 2))
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+
+        # Zero centering and l2 normalization
+        x = x - x.mean()
+        x = x / torch.norm(x, p=2, dim=1, keepdim=True)
+
+        return x
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                nn.init.uniform_(m.bias)
+            elif isinstance(m, nn.Embedding):
+                nn.init.orthogonal_(m.weight.data)
 
     def _get_trainable_params(self):
         num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
@@ -212,22 +301,31 @@ class EmbeddingCNNNetwork(nn.Module):
 
 
 class RelativeNetwork(nn.Module):
-    def __init__(self, in_channels, embedding_size, hidden_size, out_dim):
+    def __init__(self, embedding_size, hidden_size, out_dim):
         super(RelativeNetwork, self).__init__()
-        self.embedding = nn.Embedding(11, embedding_size)
-        self.conv1 = nn.Conv2d(in_channels * embedding_size, 16, kernel_size=5, padding=2)
+
+        # Initial embeddings for each channel
+        self.emb0 = nn.Embedding(11, embedding_size)
+        self.emb1 = nn.Embedding(6, embedding_size)
+        self.emb2 = nn.Embedding(2, embedding_size)
+
+        # Conv layers
+        self.conv1 = nn.Conv2d(3 * embedding_size, 16, kernel_size=5, padding=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
         self.conv1x1 = nn.Conv2d(64 + 2, 256, kernel_size=1)
+
+        # Fully connected layers
         self.fc1 = nn.Linear(256, hidden_size)
         self.fc2 = nn.Linear(hidden_size, out_dim)
+
         self.dropout = nn.Dropout(p=0.5)
 
         self._init_weights() # Initialize weights
         self._get_trainable_params() # Print number of trainable parameters
 
     def forward(self, x):
-        x = self.embedding(x)
-        x = x.permute([0, 1, 4, 2, 3]).contiguous().view(x.size(0), -1, x.size(2), x.size(3))
+        x = torch.cat([self.emb0(x[:, 0]), self.emb1(x[:, 1]), self.emb2(x[:, 2])], -1)
+        x = x.permute([0, 3, 1, 2]).contiguous()
 
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2(x), 2))
@@ -249,7 +347,6 @@ class RelativeNetwork(nn.Module):
 
         x = F.avg_pool2d(x, x.size(-1), x.size(-1)).squeeze(-1).squeeze(-1) # Global aggregation of this information
         x = F.relu(self.fc1(x))
-        x = self.dropout(x)
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
@@ -268,6 +365,8 @@ class RelativeNetwork(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight)
                 nn.init.uniform_(m.bias)
+            elif isinstance(m, nn.Embedding):
+                nn.init.orthogonal_(m.weight.data)
 
     def _get_trainable_params(self):
         num_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
