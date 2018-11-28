@@ -14,7 +14,7 @@ from capstone_project.utils import imshow, plot_video, save_object, load_object
 def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
                             dataset_name, dataset_size, data_type, time_buckets, \
                             model, batch_size, num_frames_in_stack=2, \
-                            num_channels=1, ext='.npy', transforms=None):
+                            num_channels=1, ext='.npy', flatten=False, transforms=None):
     assert dataset_type in ['maze', 'random_mmnist', 'fixed_mmnist'], \
         'Unknown dataset type "{}" passed.'.format(dataset_type)
 
@@ -22,7 +22,7 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
 
     # Maze Dataset
     if dataset_type == 'maze':
-        data = load_maze_data(project_dir, data_dir, dataset_name, data_type)
+        data = load_maze_data(project_dir, data_dir, dataset_name, data_type, flatten)
         assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
         assert model in ['cnn', 'emb-cnn1', 'emb-cnn2', 'rel'], \
             'Unknown model name "{}" passed.'.format(model)
@@ -155,23 +155,25 @@ def load_data(project_dir, data_dir, filename, data_type, ext):
 
     return data
 
-def load_maze_data(project_dir, data_dir, filename, data_type):
+def load_maze_data(project_dir, data_dir, filename, data_type, flatten=False):
     filename_dataset = '{}_{}.h5'.format(filename, data_type)
     file_path = os.path.join(project_dir, data_dir, filename_dataset)
     if os.path.exists(file_path):
         logging.info('Loading "{}"...'.format(file_path))
-        all_data = []
         with h5py.File(file_path, 'r') as f:
-            all_data = [f[key][:] for key in f.keys()]
+            data = [f[key][:] for key in f.keys()]
         logging.info('Done.')
     else:
-        all_data = split_and_dump_maze_data(project_dir, data_dir, filename, data_type)
+        data = split_and_dump_maze_data(project_dir, data_dir, filename, data_type)
 
-    seq_lens = np.array([video.shape[0] for video in all_data])
+    seq_lens = np.array([video.shape[0] for video in data])
     logging.info('Min/Max/Avg/Total sequence length in {} data: '\
                  '{:.0f}/{:.0f}/{:.0f}/{:.0f}'.format(data_type, \
                  np.min(seq_lens), np.max(seq_lens), np.mean(seq_lens), np.sum(seq_lens)))
-    return all_data
+
+    if flatten:
+        data = np.vstack([maze for maze in data])[np.newaxis,:]
+    return data
 
 def split_and_dump_maze_data(project_dir, data_dir, filename, data_type, val_size=0.2, test_size=0.2):
     file_path_in = os.path.join(project_dir, data_dir, '{}.h5'.format(filename))

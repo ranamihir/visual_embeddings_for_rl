@@ -50,6 +50,7 @@ if args.device_id and 'cuda' in DEVICE:
     DEVICE_ID = args.device_id
     torch.cuda.set_device(DEVICE_ID)
 
+FLATTEN = args.flatten                      # flatten data into 1 long video
 NUM_FRAMES_IN_STACK = args.num_frames       # number of (total) frames to concatenate for each video
 NUM_CHANNELS = args.num_channels            # number of channels in each input image frame
 NUM_PAIRS_PER_EXAMPLE = args.num_pairs      # number of pairs to generate for given video and time difference
@@ -73,13 +74,13 @@ def main():
     else:
         train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, \
                                                             NUM_TRAIN, 'train', TIME_BUCKETS, MODEL, BATCH_SIZE, \
-                                                            NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT)
+                                                            NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, FLATTEN)
         val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_VAL, 'val', \
                                         TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
-                                        DATA_EXT, transforms)
+                                        DATA_EXT, FLATTEN, transforms)
         test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_TEST, 'test', \
                                         TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
-                                        DATA_EXT, transforms)
+                                        DATA_EXT, FLATTEN, transforms)
 
     # Declare Network and Hyperparameters
     logging.info('Creating models...')

@@ -38,6 +38,7 @@ def get_args():
     parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
     parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', \
                         required=False, type=float, default=1e-4)
+    parser.add_argument('--flatten', action='store_true', help='flatten data into 1 long video')
     parser.add_argument('--num-train', metavar='NUM_TRAIN', dest='num_train', \
                         help='number of training examples', required=False, type=int, default=50000)
     parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', \
