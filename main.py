@@ -89,14 +89,18 @@ def main():
         in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 256
         embedding_hidden_size, classification_hidden_size = 256, 256
         embedding_network = CNNNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
-    elif MODEL == 'emb-cnn':
-        in_dim, in_channels, out_dim = img_dim, NUM_CHANNELS, 256
+    elif MODEL == 'emb-cnn1':
+        in_dim, out_dim = img_dim, 256
         embedding_size, embedding_hidden_size, classification_hidden_size = 8, 256, 256
-        embedding_network = EmbeddingCNNNetwork(in_dim, in_channels, embedding_size, embedding_hidden_size, out_dim)
+        embedding_network = EmbeddingCNNNetwork1(in_dim, embedding_size, embedding_hidden_size, out_dim)
+    elif MODEL == 'emb-cnn2':
+        in_dim, out_dim = img_dim, 256
+        embedding_size, embedding_hidden_size, classification_hidden_size = 8, 256, 256
+        embedding_network = EmbeddingCNNNetwork2(in_dim, embedding_size, embedding_hidden_size, out_dim)
     elif MODEL == 'rel':
-        in_channels, out_dim = NUM_CHANNELS, 512
+        out_dim = 512
         embedding_size, embedding_hidden_size, classification_hidden_size = 8, 512, 512
-        embedding_network = RelativeNetwork(in_channels, embedding_size, embedding_hidden_size, out_dim)
+        embedding_network = RelativeNetwork(embedding_size, embedding_hidden_size, out_dim)
     else:
         raise ValueError('Unknown model name "{}" passed.'.format(MODEL))
     classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs)

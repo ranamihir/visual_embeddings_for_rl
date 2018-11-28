@@ -24,7 +24,8 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
     if dataset_type == 'maze':
         data = load_maze_data(project_dir, data_dir, dataset_name, data_type)
         assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
-        assert model in ['cnn', 'emb-cnn', 'rel'], 'Unknown model name "{}" passed.'.format(model)
+        assert model in ['cnn', 'emb-cnn1', 'emb-cnn2', 'rel'], \
+            'Unknown model name "{}" passed.'.format(model)
 
         dataset = MazeDataset(data, time_buckets, num_channels, dataset_size, \
                               return_embedding=False if model == 'cnn' else True)
