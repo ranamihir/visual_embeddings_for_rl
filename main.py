@@ -123,7 +123,8 @@ def main():
     if CHECKPOINT_FILE:
         embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
         train_accuracy_history, val_accuracy_history, epoch_trained = \
-            load_checkpoint(embedding_network, classification_network, optimizer, CHECKPOINT_FILE, PROJECT_DIR, CHECKPOINTS_DIR, DEVICE)
+            load_checkpoint(embedding_network, classification_network, optimizer, CHECKPOINT_FILE, \
+                            PROJECT_DIR, CHECKPOINTS_DIR, DEVICE)
         start_epoch = epoch_trained # Start from (epoch_trained+1) if checkpoint loaded
 
     # Check if model is to be parallelized
@@ -136,7 +137,7 @@ def main():
     embedding_network = embedding_network.to(DEVICE)
     classification_network = classification_network.to(DEVICE)
 
-    early_stopping = EarlyStopping(mode='minimize', min_delta=0, patience=10)
+    early_stopping = EarlyStopping(mode='maximize', min_delta=0.5, patience=10)
     best_epoch = start_epoch+1
 
     for epoch in range(start_epoch+1, N_EPOCHS+start_epoch+1):
@@ -168,22 +169,25 @@ def main():
             train_accuracy_history.append(accuracy_train)
             val_accuracy_history.append(accuracy_val)
 
-            logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'.format(epoch, np.sum(train_losses), accuracy_train))
-            logging.info('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'.format(epoch, val_loss, accuracy_val))
+            logging.info('TRAIN Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%'\
+                         .format(epoch, np.sum(train_losses), accuracy_train))
+            logging.info('VAL   Epoch: {}\tAverage loss: {:.4f}, Accuracy: {:.0f}%\n'\
+                         .format(epoch, val_loss, accuracy_val))
 
-            if early_stopping.is_better(val_loss):
+            if early_stopping.is_better(accuracy_val):
                 logging.info('Saving current best model checkpoint...')
-                save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-                            train_accuracy_history, val_accuracy_history, epoch, DATASET, NUM_FRAMES_IN_STACK, \
-                            NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES, PARALLEL or NGPU)
+                save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
+                                val_loss_history, train_accuracy_history, val_accuracy_history, epoch, DATASET, \
+                                MODEL, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, \
+                                CHECKPOINTS_DIR, USE_POOL, USE_RES, PARALLEL or NGPU)
                 logging.info('Done.')
                 logging.info('Removing previous best model checkpoint...')
-                remove_checkpoint(DATASET, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, \
-                                CHECKPOINTS_DIR, best_epoch, USE_POOL, USE_RES)
+                remove_checkpoint(DATASET, MODEL, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, \
+                                  PROJECT_DIR, CHECKPOINTS_DIR, best_epoch, USE_POOL, USE_RES)
                 logging.info('Done.')
                 best_epoch = epoch
 
-            if early_stopping.stop(val_loss) or round(accuracy_val) == 100:
+            if early_stopping.stop(accuracy_val) or round(accuracy_val) == 100:
                 logging.info('Stopping early after {} epochs.'.format(epoch))
                 stop_epoch = epoch
                 break
@@ -196,7 +200,7 @@ def main():
     logging.info('Dumping model and results...')
     print_config(global_vars) # Print all global variables before saving checkpointing
     save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-                    train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, NUM_FRAMES_IN_STACK, \
+                    train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, MODEL, NUM_FRAMES_IN_STACK, \
                     NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES, PARALLEL or NGPU)
     logging.info('Done.')
 

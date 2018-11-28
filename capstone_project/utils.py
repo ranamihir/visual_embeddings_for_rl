@@ -164,7 +164,7 @@ def load_object(filepath):
     return object
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-                    train_accuracy_history, val_accuracy_history, epoch, dataset, num_frames_in_stack, \
+                    train_accuracy_history, val_accuracy_history, epoch, dataset, model_name, num_frames_in_stack, \
                     num_pairs_per_example, project_dir, checkpoints_dir, use_pool=False, use_res=False, is_parallel=False):
 
     state_dict = {
@@ -178,17 +178,19 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
         'val_accuracy_history': val_accuracy_history
     }
 
-    state_dict_name = 'state_dict_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
-                    .format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, use_pool*1, use_res*1, epoch)
+    state_dict_name = 'state_dict_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
+                    .format(os.path.splitext(dataset)[0], model_name, num_frames_in_stack, \
+                            num_pairs_per_example, use_pool*1, use_res*1, epoch)
     state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
     logging.info('Saving checkpoint "{}"...'.format(state_dict_path))
     torch.save(state_dict, state_dict_path)
     logging.info('Done.')
 
-def remove_checkpoint(dataset, num_frames_in_stack, num_pairs_per_example, project_dir, \
-                    checkpoints_dir, epoch, use_pool=False, use_res=False):
-    state_dict_name = 'state_dict_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
-                    .format(os.path.splitext(dataset)[0], num_frames_in_stack, num_pairs_per_example, use_pool*1, use_res*1, epoch)
+def remove_checkpoint(dataset, model_name, num_frames_in_stack, num_pairs_per_example, \
+                      project_dir, checkpoints_dir, epoch, use_pool=False, use_res=False):
+    state_dict_name = 'state_dict_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
+                    .format(os.path.splitext(dataset)[0], model_name, num_frames_in_stack, \
+                            num_pairs_per_example, use_pool*1, use_res*1, epoch)
     state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
     logging.info('Removing checkpoint "{}"...'.format(state_dict_path))
     if os.path.exists(state_dict_path):
