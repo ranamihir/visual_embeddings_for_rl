@@ -27,6 +27,7 @@ CHECKPOINTS_DIR, CHECKPOINT_FILE = args.checkpoints_dir, args.load_ckpt
 DATASET_TYPE, DATASET, DATA_EXT = args.dataset_type, args.dataset, args.data_ext
 OFFLINE = args.offline
 MODEL = args.model
+FORCE = args.force
 
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
 if not OFFLINE:
@@ -70,17 +71,17 @@ def main():
     if OFFLINE:
         train_loader, val_loader, test_loader = generate_all_offline_dataloaders(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET, \
                                                                                 TIME_BUCKETS, BATCH_SIZE, NUM_PAIRS_PER_EXAMPLE, \
-                                                                                NUM_FRAMES_IN_STACK, DATA_EXT, args.force)
+                                                                                NUM_FRAMES_IN_STACK, DATA_EXT, FORCE)
     else:
         train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, \
                                                             NUM_TRAIN, 'train', TIME_BUCKETS, MODEL, BATCH_SIZE, \
-                                                            NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, FLATTEN)
+                                                            NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, FLATTEN, None, FORCE)
         val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_VAL, 'val', \
                                         TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
-                                        DATA_EXT, FLATTEN, transforms)
+                                        DATA_EXT, FLATTEN, transforms, FORCE)
         test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_TEST, 'test', \
                                         TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
-                                        DATA_EXT, FLATTEN, transforms)
+                                        DATA_EXT, FLATTEN, transforms, FORCE)
 
     # Declare Network and Hyperparameters
     logging.info('Creating models...')

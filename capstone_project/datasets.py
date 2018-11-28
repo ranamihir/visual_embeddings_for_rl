@@ -318,12 +318,11 @@ class MazeDataset(Dataset):
     def _check_data(self):
         max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
         video = self.data[0]
-        min_seq_len, num_channels = self.data[0].shape[:2]
+        num_channels = self.data[0].shape[1]
         assert self.num_channels == num_channels, "Number of channels passed \
             (={}) don't match that in data (={})".format(self.num_channels, num_channels)
 
-        for video in self.data:
-            min_seq_len = min(min_seq_len, video.shape[0])
+        min_seq_len = np.min([maze.shape[0] for maze in self.data])
         assert max_frame_diff <= min_seq_len, \
             'Min sequence length (={}) not long enough for max_frame_diff (={})'\
             .format(min_seq_len, max_frame_diff)
@@ -341,7 +340,7 @@ class MazeDataset(Dataset):
         '''
         Returns a dict with the key as the time difference between the frames
         and the value as a list of tuples (start_frame, end_frame) containing
-        all the pair of frames with that time difference
+        all the pair of frames with that time difference for a given video
         '''
         sequence_length = video.shape[0]
         max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
@@ -358,10 +357,9 @@ class MazeDataset(Dataset):
 
     def _get_sample_at_difference(self, video_idx, bucket_idx):
         '''
-        Sampling a time difference from the associated bucket idx,
-        sampling a video pair at that difference, and finally returning
-        the (stacked) image pairs (tuple), their time difference, and
-        the last frame numbers for each pair (tuple)
+        Sampling a time difference from the associated bucket idx for a,
+        given video, and returning the image pairs (tuple), their time
+        difference, and the last frame numbers for each pair (tuple)
         '''
         video = self.data[video_idx]
         difference = np.random.choice(self.time_buckets_dict[bucket_idx])

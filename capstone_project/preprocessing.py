@@ -12,9 +12,10 @@ from capstone_project.datasets import *
 from capstone_project.utils import imshow, plot_video, save_object, load_object
 
 def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
-                            dataset_name, dataset_size, data_type, time_buckets, \
-                            model, batch_size, num_frames_in_stack=2, \
-                            num_channels=1, ext='.npy', flatten=False, transforms=None):
+                               dataset_name, dataset_size, data_type, time_buckets, \
+                               model, batch_size, num_frames_in_stack=2, \
+                               num_channels=1, ext='.npy', flatten=False, \
+                               transforms=None, force=False):
     assert dataset_type in ['maze', 'random_mmnist', 'fixed_mmnist'], \
         'Unknown dataset type "{}" passed.'.format(dataset_type)
 
@@ -22,7 +23,7 @@ def generate_online_dataloader(project_dir, data_dir, plots_dir, dataset_type, \
 
     # Maze Dataset
     if dataset_type == 'maze':
-        data = load_maze_data(project_dir, data_dir, dataset_name, data_type, flatten)
+        data = load_maze_data(project_dir, data_dir, dataset_name, data_type, flatten, force)
         assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
         assert model in ['cnn', 'emb-cnn1', 'emb-cnn2', 'rel'], \
             'Unknown model name "{}" passed.'.format(model)
@@ -155,10 +156,10 @@ def load_data(project_dir, data_dir, filename, data_type, ext):
 
     return data
 
-def load_maze_data(project_dir, data_dir, filename, data_type, flatten=False):
+def load_maze_data(project_dir, data_dir, filename, data_type, flatten=False, force=False):
     filename_dataset = '{}_{}.h5'.format(filename, data_type)
     file_path = os.path.join(project_dir, data_dir, filename_dataset)
-    if os.path.exists(file_path):
+    if not force and os.path.exists(file_path):
         logging.info('Loading "{}"...'.format(file_path))
         with h5py.File(file_path, 'r') as f:
             data = [f[key][:] for key in f.keys()]
@@ -166,7 +167,7 @@ def load_maze_data(project_dir, data_dir, filename, data_type, flatten=False):
     else:
         data = split_and_dump_maze_data(project_dir, data_dir, filename, data_type)
 
-    seq_lens = np.array([video.shape[0] for video in data])
+    seq_lens = np.array([maze.shape[0] for maze in data])
     logging.info('Min/Max/Avg/Total sequence length in {} data: '\
                  '{:.0f}/{:.0f}/{:.0f}/{:.0f}'.format(data_type, \
                  np.min(seq_lens), np.max(seq_lens), np.mean(seq_lens), np.sum(seq_lens)))

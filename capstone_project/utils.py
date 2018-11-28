@@ -5,6 +5,7 @@ import logging
 import time
 import sys
 import pickle
+from types import ModuleType
 from itertools import islice
 from pprint import pformat
 
@@ -116,7 +117,8 @@ def plot_video(data, project_dir, plots_dir, dataset):
     logging.info('Done.')
 
 def print_config(vars_dict):
-    vars_dict = {key: value for key, value in vars_dict.items() if key == key.upper()}
+    vars_dict = {key: value for key, value in vars_dict.items() if key == key.upper() \
+                 and not isinstance(value, ModuleType)}
     logging.info(pformat(vars_dict))
 
 def save_plot(project_dir, plots_dir, fig, filename):
