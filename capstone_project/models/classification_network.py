@@ -17,7 +17,6 @@ class ClassificationNetwork(nn.Module):
 
     def forward(self, x1, x2):
         x = x1 * x2
-        x = x.view(x.size(0), -1) # Reshape input to batch_size x num_inputs
         x = self.fc1(x)
         x = self.relu(x)
         x = self.dropout(x)
