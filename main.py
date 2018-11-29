@@ -24,9 +24,10 @@ args = get_args()
 PROJECT_DIR = args.project_dir
 DATA_DIR,  PLOTS_DIR, LOGGING_DIR = args.data_dir, 'plots', 'logs'
 CHECKPOINTS_DIR, CHECKPOINT_FILE = args.checkpoints_dir, args.load_ckpt
+EMB_MODEL_CKPT, CLS_MODEL_CKPT = args.load_emb_ckpt, args.load_cls_ckpt
 DATASET_TYPE, DATASET, DATA_EXT = args.dataset_type, args.dataset, args.data_ext
 OFFLINE = args.offline
-MODEL = args.model
+EMB_MODEL = args.emb_model
 FORCE = args.force
 
 TEST_SIZE, VAL_SIZE = 0.2, 0.2
@@ -74,37 +75,37 @@ def main():
                                                                                 NUM_FRAMES_IN_STACK, DATA_EXT, FORCE)
     else:
         train_loader, transforms = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, \
-                                                            NUM_TRAIN, 'train', TIME_BUCKETS, MODEL, BATCH_SIZE, \
+                                                            NUM_TRAIN, 'train', TIME_BUCKETS, EMB_MODEL, BATCH_SIZE, \
                                                             NUM_FRAMES_IN_STACK, NUM_CHANNELS, DATA_EXT, FLATTEN, None, FORCE)
         val_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_VAL, 'val', \
-                                        TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
+                                        TIME_BUCKETS, EMB_MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
                                         DATA_EXT, FLATTEN, transforms, FORCE)
         test_loader = generate_online_dataloader(PROJECT_DIR, DATA_DIR, PLOTS_DIR, DATASET_TYPE, DATASET, NUM_TEST, 'test', \
-                                        TIME_BUCKETS, MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
+                                        TIME_BUCKETS, EMB_MODEL, BATCH_SIZE, NUM_FRAMES_IN_STACK, NUM_CHANNELS, \
                                         DATA_EXT, FLATTEN, transforms, FORCE)
 
     # Declare Network and Hyperparameters
     logging.info('Creating models...')
     img_dim = train_loader.dataset.__getitem__(0)[0].shape[-1]
     num_outputs = len(TIME_BUCKETS)
-    if MODEL == 'cnn':
+    if EMB_MODEL == 'cnn':
         in_dim, in_channels, out_dim = img_dim, NUM_FRAMES_IN_STACK*NUM_CHANNELS, 256
         embedding_hidden_size, classification_hidden_size = 256, 256
         embedding_network = CNNNetwork(in_dim, in_channels, embedding_hidden_size, out_dim, use_pool=USE_POOL, use_res=USE_RES)
-    elif MODEL == 'emb-cnn1':
+    elif EMB_MODEL == 'emb-cnn1':
         in_dim, out_dim = img_dim, 256
         embedding_size, embedding_hidden_size, classification_hidden_size = 8, 256, 256
         embedding_network = EmbeddingCNNNetwork1(in_dim, embedding_size, embedding_hidden_size, out_dim)
-    elif MODEL == 'emb-cnn2':
+    elif EMB_MODEL == 'emb-cnn2':
         in_dim, out_dim = img_dim, 256
         embedding_size, embedding_hidden_size, classification_hidden_size = 8, 256, 256
         embedding_network = EmbeddingCNNNetwork2(in_dim, embedding_size, embedding_hidden_size, out_dim)
-    elif MODEL == 'rel':
+    elif EMB_MODEL == 'rel':
         out_dim = 512
         embedding_size, embedding_hidden_size, classification_hidden_size = 8, 512, 512
         embedding_network = RelativeNetwork(embedding_size, embedding_hidden_size, out_dim)
     else:
-        raise ValueError('Unknown model name "{}" passed.'.format(MODEL))
+        raise ValueError('Unknown embedding network name "{}" passed.'.format(EMB_MODEL))
     classification_network = ClassificationNetwork(out_dim, classification_hidden_size, num_outputs)
     logging.info('Done.')
     logging.info(embedding_network)
@@ -121,13 +122,18 @@ def main():
     train_loss_history, train_accuracy_history = [], []
     val_loss_history, val_accuracy_history = [], []
 
-    # Load model state dicts if required
-    if CHECKPOINT_FILE:
+    # Load model state dicts / models if required
+    if CHECKPOINT_FILE: # First check for state dicts
         embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
         train_accuracy_history, val_accuracy_history, epoch_trained = \
             load_checkpoint(embedding_network, classification_network, optimizer, CHECKPOINT_FILE, \
                             PROJECT_DIR, CHECKPOINTS_DIR, DEVICE)
         start_epoch = epoch_trained # Start from (epoch_trained+1) if checkpoint loaded
+    elif EMB_MODEL_CKPT or CLS_MODEL_CKPT: # Otherwise check for entire model
+        if EMB_MODEL_CKPT:
+            embedding_network = load_model(PROJECT_DIR, CHECKPOINTS_DIR, EMB_MODEL_CKPT)
+        if CLS_MODEL_CKPT:
+            classification_network = load_model(PROJECT_DIR, CHECKPOINTS_DIR, CLS_MODEL_CKPT)
 
     # Check if model is to be parallelized
     if TOTAL_GPUs > 1 and (PARALLEL or NGPU):
@@ -180,11 +186,11 @@ def main():
                 logging.info('Saving current best model checkpoint...')
                 save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
                                 val_loss_history, train_accuracy_history, val_accuracy_history, epoch, DATASET, \
-                                MODEL, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, \
+                                EMB_MODEL, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, \
                                 CHECKPOINTS_DIR, USE_POOL, USE_RES, PARALLEL or NGPU)
                 logging.info('Done.')
                 logging.info('Removing previous best model checkpoint...')
-                remove_checkpoint(DATASET, MODEL, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, \
+                remove_checkpoint(DATASET, EMB_MODEL, NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, \
                                   PROJECT_DIR, CHECKPOINTS_DIR, best_epoch, USE_POOL, USE_RES)
                 logging.info('Done.')
                 best_epoch = epoch
@@ -202,8 +208,12 @@ def main():
     logging.info('Dumping model and results...')
     print_config(global_vars) # Print all global variables before saving checkpointing
     save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-                    train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, MODEL, NUM_FRAMES_IN_STACK, \
+                    train_accuracy_history, val_accuracy_history, stop_epoch, DATASET, EMB_MODEL, NUM_FRAMES_IN_STACK, \
                     NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES, PARALLEL or NGPU)
+    save_model(embedding_network, 'embedding_network', stop_epoch, DATASET, EMB_MODEL, \
+               NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES)
+    save_model(classification_network, 'classification_network', stop_epoch, DATASET, EMB_MODEL, \
+               NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES)
     logging.info('Done.')
 
     if len(train_loss_history) and len(val_loss_history):

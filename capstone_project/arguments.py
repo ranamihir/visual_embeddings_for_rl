@@ -19,12 +19,16 @@ def get_args():
                         required=False, default='data')
     parser.add_argument('--offline', action='store_true', \
                         help='use offline preprocessing of data loader')
-    parser.add_argument('--model', metavar='MODEL', dest='model', \
-                        help='name of embedding network', required=False, default='classic')
+    parser.add_argument('--emb-model', metavar='EMB_MODEL', dest='emb_model', \
+                        help='name of embedding network', required=False, default='cnn')
     parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', \
                         help='path to checkpoints directory', required=False, default='checkpoints')
     parser.add_argument('--load-ckpt', metavar='LOAD_CHECKPOINT', dest='load_ckpt', \
                         help='name of checkpoint file to load', required=False)
+    parser.add_argument('--load-emb-ckpt', metavar='LOAD_EMB_CKPT', dest='load_emb_ckpt', \
+                        help='name of embedding network file to load', required=False)
+    parser.add_argument('--load-cls-ckpt', metavar='LOAD_CLS_CKPT', dest='load_cls_ckpt', \
+                        help='name of classification network file to load', required=False)
     parser.add_argument('--batch-size', metavar='BATCH_SIZE', dest='batch_size', help='batch size', \
                         required=False, type=int, default=64)
     parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', \

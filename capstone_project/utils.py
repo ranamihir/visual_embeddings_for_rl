@@ -102,9 +102,9 @@ def get_embeddings(embedding_network, dataloader, device):
     return all_embeddings
 
 def save_embeddings(embeddings, project_dir, data_dir, embeddings_dir, \
-                    dataset, model_name, use_pool, use_res):
+                    dataset, embedding_model_name, use_pool, use_res):
     file_name = 'embeddings_{}_{}_pool{}_res{}.pkl'\
-                .format(os.path.splitext(dataset)[0], model_name, use_pool*1, use_res*1)
+                .format(os.path.splitext(dataset)[0], embedding_model_name, use_pool*1, use_res*1)
     file_path = os.path.join(project_dir, data_dir, embeddings_dir, file_name)
     logging.info('Saving "{}"...'.format(file_path))
     save_object(embeddings, file_path)
@@ -194,7 +194,7 @@ def load_object(filepath):
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
                     val_loss_history, train_accuracy_history, val_accuracy_history, epoch, dataset, \
-                    model_name, num_frames_in_stack, num_pairs_per_example, project_dir, \
+                    embedding_model_name, num_frames_in_stack, num_pairs_per_example, project_dir, \
                     checkpoints_dir, use_pool=False, use_res=False, is_parallel=False):
 
     state_dict = {
@@ -211,17 +211,17 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
     }
 
     state_dict_name = 'state_dict_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
-                    .format(os.path.splitext(dataset)[0], model_name, num_frames_in_stack, \
+                    .format(os.path.splitext(dataset)[0], embedding_model_name, num_frames_in_stack, \
                             num_pairs_per_example, use_pool*1, use_res*1, epoch)
     state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
     logging.info('Saving checkpoint "{}"...'.format(state_dict_path))
     torch.save(state_dict, state_dict_path)
     logging.info('Done.')
 
-def remove_checkpoint(dataset, model_name, num_frames_in_stack, num_pairs_per_example, \
+def remove_checkpoint(dataset, embedding_model_name, num_frames_in_stack, num_pairs_per_example, \
                       project_dir, checkpoints_dir, epoch, use_pool=False, use_res=False):
     state_dict_name = 'state_dict_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
-                    .format(os.path.splitext(dataset)[0], model_name, num_frames_in_stack, \
+                    .format(os.path.splitext(dataset)[0], embedding_model_name, num_frames_in_stack, \
                             num_pairs_per_example, use_pool*1, use_res*1, epoch)
     state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
     logging.info('Removing checkpoint "{}"...'.format(state_dict_path))
@@ -253,16 +253,13 @@ def load_checkpoint(embedding_network, classification_network, optimizer, \
         val_accuracy_history = state_dict['val_accuracy_history']
 
         embedding_network.load_state_dict(state_dict['embedding_state_dict'])
+        classification_network.load_state_dict(state_dict['classification_state_dict'])
 
-        if classification_network is not None:
-            classification_network.load_state_dict(state_dict['classification_state_dict'])
-
-        if optimizer is not None:
-            optimizer.load_state_dict(state_dict['optimizer'])
-            for state in optimizer.state.values():
-                for k, v in state.items():
-                    if isinstance(v, torch.Tensor):
-                        state[k] = v.to(device)
+        optimizer.load_state_dict(state_dict['optimizer'])
+        for state in optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(device)
 
         logging.info('Successfully loaded checkpoint "{}".'.format(state_dict_path))
 
@@ -271,6 +268,31 @@ def load_checkpoint(embedding_network, classification_network, optimizer, \
 
     return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
             train_accuracy_history, val_accuracy_history, epoch_trained
+
+def save_model(model, model_name, epoch, dataset, embedding_model_name, num_frames_in_stack, \
+               num_pairs_per_example, project_dir, checkpoints_dir, use_pool=False, use_res=False):
+
+    model = model.to('cpu')
+
+    checkpoint_name = '{}_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pt'\
+                    .format(model_name, os.path.splitext(dataset)[0], embedding_model_name, \
+                            num_frames_in_stack, num_pairs_per_example, use_pool*1, \
+                            use_res*1, epoch)
+    checkpoint_path = os.path.join(project_dir, checkpoints_dir, checkpoint_name)
+    logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
+    torch.save(model, checkpoint_path)
+    logging.info('Done.')
+
+def load_model(project_dir, checkpoints_dir, checkpoint_file):
+    checkpoint_path = os.path.join(project_dir, checkpoints_dir, checkpoint_file)
+    if os.path.exists(checkpoint_path):
+        logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
+        model = torch.load(checkpoint_path)
+        logging.info('Done.')
+    else:
+        raise FileNotFoundError('No checkpoint found at "{}"!'.format(checkpoint_path))
+
+    return model
 
 
 class EarlyStopping(object):
