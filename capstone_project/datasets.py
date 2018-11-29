@@ -373,6 +373,32 @@ class MazeDataset(Dataset):
                 torch.from_numpy(image_pair_idxs)
 
 
+class MazeEmbeddingsDataset(Dataset):
+    def __init__(self, data, num_channels=3, return_embedding=False):
+        self.data = data
+        self.num_channels = num_channels
+        self._check_data()
+        self.return_embedding = return_embedding
+
+    def __getitem__(self, index):
+        video = torch.from_numpy(np.array(self.data[index]))
+
+        if self.return_embedding:
+            video = torch.stack([img.clamp(0, 10).long() for img in video], dim=0)
+        else:
+            video = torch.stack([(img.clamp(0, 10)/10).float() for img in video], dim=0)
+        return video
+
+    def __len__(self):
+        return len(self.data)
+
+    def _check_data(self):
+        video = self.data[0]
+        num_channels = self.data[0].shape[1]
+        assert self.num_channels == num_channels, "Number of channels passed \
+            (={}) don't match that in data (={})".format(self.num_channels, num_channels)
+
+
 class OfflineMovingMNISTDataset(Dataset):
     def __init__(self, X, y, differences, frame_numbers, transforms=None):
         self.X = torch.from_numpy(X)

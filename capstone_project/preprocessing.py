@@ -157,7 +157,7 @@ def load_data(project_dir, data_dir, filename, data_type, ext):
     return data
 
 def load_maze_data(project_dir, data_dir, filename, data_type, flatten=False, force=False):
-    filename_dataset = '{}_{}.h5'.format(filename, data_type)
+    filename_dataset = '{}{}.h5'.format(filename, '_{}'.format(data_type) if data_type else '')
     file_path = os.path.join(project_dir, data_dir, filename_dataset)
     if not force and os.path.exists(file_path):
         logging.info('Loading "{}"...'.format(file_path))
@@ -302,3 +302,25 @@ def split_data(data, val_size, test_size, project_dir, data_dir):
     }
 
     return data_dict
+
+def generate_embedding_dataloader(project_dir, data_dir, dataset_type, \
+                                  dataset_name, model, batch_size, \
+                                  num_channels=1, ext='.npy'):
+    assert dataset_type in ['maze'], \
+        'Unknown dataset type "{}" passed.'.format(dataset_type)
+
+    logging.info('Generating data loader...')
+
+    # Maze Dataset
+    data = load_maze_data(project_dir, data_dir, dataset_name, '', False, False)
+    assert len(data[0].shape) == 4, 'Unknown input data shape "{}"'.format(data.shape)
+    assert model in ['cnn', 'emb-cnn1', 'emb-cnn2', 'rel'], \
+        'Unknown model name "{}" passed.'.format(model)
+
+    dataset = MazeEmbeddingsDataset(data, num_channels, return_embedding=False \
+                                    if model == 'cnn' else True)
+
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    logging.info('Done.')
+
+    return dataloader

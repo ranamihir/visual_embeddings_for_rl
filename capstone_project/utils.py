@@ -17,9 +17,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def train(embedding_network, classification_network, dataloader, criterion, optimizer, device, epoch, offline=False):
+def train(embedding_network, classification_network, dataloader, \
+          criterion, optimizer, device, epoch, offline=False):
     loss_hist = []
-    dataloader_iterator = enumerate(dataloader) if offline else enumerate(islice(dataloader, len(dataloader)))
+    dataloader_iterator = enumerate(dataloader) if offline \
+                          else enumerate(islice(dataloader, len(dataloader)))
     for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
         embedding_network.train()
@@ -55,7 +57,8 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
     y_hist = []
     output_hist = []
     with torch.no_grad():
-        dataloader_iterator = enumerate(dataloader) if offline else enumerate(islice(dataloader, len(dataloader)))
+        dataloader_iterator = enumerate(dataloader) if offline \
+                              else enumerate(islice(dataloader, len(dataloader)))
         for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
             x1, x2, y = x1.to(device), x2.to(device), y.to(device)
             embedding_output1 = embedding_network(x1)
@@ -82,6 +85,30 @@ def accuracy(embedding_network, classification_network, dataloader, criterion, d
 
     y_predicted = y_predicted.max(1)[1]
     return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
+
+def get_embeddings(embedding_network, dataloader, device):
+    embedding_network.eval()
+    all_embeddings = []
+    with torch.no_grad():
+        for batch_idx, video in enumerate(dataloader):
+            embeddings = []
+            for x in video.permute([1, 0, 2, 3, 4]):
+                x = x.to(device)
+                embedding = embedding_network(x).detach().cpu().numpy()
+                embeddings.append(embedding)
+            if (batch_idx+1) % 50 == 0:
+                logging.info('Batch {}/{} completed.'.format(batch_idx+1, len(dataloader)))
+            all_embeddings.append(embeddings)
+    return all_embeddings
+
+def save_embeddings(embeddings, project_dir, data_dir, embeddings_dir, \
+                    dataset, model_name, use_pool, use_res):
+    file_name = 'embeddings_{}_{}_pool{}_res{}.pkl'\
+                .format(os.path.splitext(dataset)[0], model_name, use_pool*1, use_res*1)
+    file_path = os.path.join(project_dir, data_dir, embeddings_dir, file_name)
+    logging.info('Saving "{}"...'.format(file_path))
+    save_object(embeddings, file_path)
+    logging.info('Done.')
 
 def imshow(data, mean, std, project_dir, plots_dir, dataset):
     logging.info('Plotting sample data and saving to "{}_sample.png"...'.format(dataset))
@@ -165,13 +192,16 @@ def load_object(filepath):
         return None
     return object
 
-def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
-                    train_accuracy_history, val_accuracy_history, epoch, dataset, model_name, num_frames_in_stack, \
-                    num_pairs_per_example, project_dir, checkpoints_dir, use_pool=False, use_res=False, is_parallel=False):
+def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
+                    val_loss_history, train_accuracy_history, val_accuracy_history, epoch, dataset, \
+                    model_name, num_frames_in_stack, num_pairs_per_example, project_dir, \
+                    checkpoints_dir, use_pool=False, use_res=False, is_parallel=False):
 
     state_dict = {
-        'embedding_state_dict': embedding_network.module.state_dict() if is_parallel else embedding_network.state_dict(),
-        'classification_state_dict': classification_network.module.state_dict() if is_parallel else classification_network.state_dict(),
+        'embedding_state_dict': embedding_network.module.state_dict() if is_parallel \
+                                else embedding_network.state_dict(),
+        'classification_state_dict': classification_network.module.state_dict() if is_parallel \
+                                     else classification_network.state_dict(),
         'optimizer': optimizer.state_dict(),
         'epoch': epoch,
         'train_loss_history': train_loss_history,
@@ -199,7 +229,8 @@ def remove_checkpoint(dataset, model_name, num_frames_in_stack, num_pairs_per_ex
         os.remove(state_dict_path)
     logging.info('Done.')
 
-def load_checkpoint(embedding_network, classification_network, optimizer, checkpoint_file, project_dir, checkpoints_dir, device):
+def load_checkpoint(embedding_network, classification_network, optimizer, \
+                    checkpoint_file, project_dir, checkpoints_dir, device):
     # Note: Input model & optimizer should be pre-defined. This routine only updates their states.
 
     train_loss_history, val_loss_history = [], []
@@ -216,18 +247,22 @@ def load_checkpoint(embedding_network, classification_network, optimizer, checkp
         epoch_trained = int(os.path.splitext(checkpoint_file)[0].split('_epoch')[-1])
         assert epoch_trained == state_dict['epoch']
 
-        embedding_network.load_state_dict(state_dict['embedding_state_dict'])
-        classification_network.load_state_dict(state_dict['classification_state_dict'])
-        optimizer.load_state_dict(state_dict['optimizer'])
         train_loss_history = state_dict['train_loss_history']
         val_loss_history = state_dict['val_loss_history']
         train_accuracy_history = state_dict['train_accuracy_history']
         val_accuracy_history = state_dict['val_accuracy_history']
 
-        for state in optimizer.state.values():
-            for k, v in state.items():
-                if isinstance(v, torch.Tensor):
-                    state[k] = v.to(device)
+        embedding_network.load_state_dict(state_dict['embedding_state_dict'])
+
+        if classification_network is not None:
+            classification_network.load_state_dict(state_dict['classification_state_dict'])
+
+        if optimizer is not None:
+            optimizer.load_state_dict(state_dict['optimizer'])
+            for state in optimizer.state.values():
+                for k, v in state.items():
+                    if isinstance(v, torch.Tensor):
+                        state[k] = v.to(device)
 
         logging.info('Successfully loaded checkpoint "{}".'.format(state_dict_path))
 
