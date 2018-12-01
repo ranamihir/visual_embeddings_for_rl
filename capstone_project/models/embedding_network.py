@@ -97,7 +97,7 @@ class CNNNetwork(nn.Module):
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
-        x = x - x.mean()
+        x = x - x.mean(-1, keepdim=True)
         x = x / torch.norm(x, p=2, dim=1, keepdim=True)
 
         return x
@@ -216,7 +216,7 @@ class EmbeddingCNNNetwork1(nn.Module):
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
-        x = x - x.mean()
+        x = x - x.mean(-1, keepdim=True)
         x = x / torch.norm(x, p=2, dim=1, keepdim=True)
 
         return x
@@ -276,7 +276,7 @@ class EmbeddingCNNNetwork2(nn.Module):
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
-        x = x - x.mean()
+        x = x - x.mean(-1, keepdim=True)
         x = x / torch.norm(x, p=2, dim=1, keepdim=True)
 
         return x
@@ -350,7 +350,7 @@ class RelativeNetwork(nn.Module):
         x = self.fc2(x)
 
         # Zero centering and l2 normalization
-        x = x - x.mean()
+        x = x - x.mean(-1, keepdim=True)
         x = x / torch.norm(x, p=2, dim=1, keepdim=True)
 
         return x
