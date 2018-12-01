@@ -18,11 +18,10 @@ import matplotlib.pyplot as plt
 
 
 def train(embedding_network, classification_network, dataloader, \
-          criterion, optimizer, device, epoch, offline=False):
+          criterion, optimizer, device, epoch):
     loss_hist = []
-    dataloader_iterator = enumerate(dataloader) if offline \
-                          else enumerate(islice(dataloader, len(dataloader)))
-    for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
+    for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in enumerate(islice(dataloader, \
+                                                                             len(dataloader))):
         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
         embedding_network.train()
         classification_network.train()
@@ -49,7 +48,7 @@ def train(embedding_network, classification_network, dataloader, \
     optimizer.zero_grad()
     return loss_hist
 
-def test(embedding_network, classification_network, dataloader, criterion, device, offline=False):
+def test(embedding_network, classification_network, dataloader, criterion, device):
     embedding_network.eval()
     classification_network.eval()
 
@@ -57,9 +56,8 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
     y_hist = []
     output_hist = []
     with torch.no_grad():
-        dataloader_iterator = enumerate(dataloader) if offline \
-                              else enumerate(islice(dataloader, len(dataloader)))
-        for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in dataloader_iterator:
+        for batch_idx, (x1, x2, y, differences, (frame_1, frame_2)) in enumerate(islice(dataloader, \
+                                                                                 len(dataloader))):
             x1, x2, y = x1.to(device), x2.to(device), y.to(device)
             embedding_output1 = embedding_network(x1)
             embedding_output2 = embedding_network(x2)
@@ -72,19 +70,11 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
             output_hist.append(classification_output)
             y_hist.append(y)
 
-    return loss_test, torch.cat(output_hist, dim=0), torch.cat(y_hist, dim=0)
+    y_predicted = torch.cat(output_hist, dim=0).max(1)[1]
+    y_true = torch.cat(y_hist, dim=0)
+    accuracy = 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
 
-def accuracy(embedding_network, classification_network, dataloader, criterion, device):
-    _, y_predicted, y_true = test(
-        embedding_network=embedding_network,
-        classification_network=classification_network,
-        dataloader=dataloader,
-        criterion=criterion,
-        device=device
-    )
-
-    y_predicted = y_predicted.max(1)[1]
-    return 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
+    return accuracy, loss_test
 
 def get_embeddings(embedding_network, dataloader, device):
     embedding_network.eval()

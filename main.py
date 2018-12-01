@@ -157,23 +157,21 @@ def main():
                 dataloader=train_loader,
                 optimizer=optimizer,
                 device=DEVICE,
-                epoch=epoch,
-                offline=OFFLINE
+                epoch=epoch
             )
 
-            val_loss, val_pred, val_true = test(
+            accuracy_val, val_loss = test(
                 embedding_network=embedding_network,
                 classification_network=classification_network,
                 dataloader=val_loader,
                 criterion=criterion_test,
-                device=DEVICE,
-                offline=OFFLINE
+                device=DEVICE
             )
 
-            accuracy_train = accuracy(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
-            accuracy_val = accuracy(embedding_network, classification_network, val_loader, criterion_test, DEVICE)
             train_loss_history.extend(train_losses)
             val_loss_history.append(val_loss)
+
+            accuracy_train, _ = test(embedding_network, classification_network, train_loader, criterion_test, DEVICE)
             train_accuracy_history.append(accuracy_train)
             val_accuracy_history.append(accuracy_val)
 
