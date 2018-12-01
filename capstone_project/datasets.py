@@ -293,6 +293,7 @@ class MazeDataset(Dataset):
         self.num_channels = num_channels
         self.time_buckets_dict = self._get_time_buckets_dict(time_buckets)
         self._check_data()
+        self.candidates_differences_dict = self._get_candidates_differences_dict()
         self.transforms = transforms
         self.return_embedding = return_embedding
 
@@ -336,23 +337,30 @@ class MazeDataset(Dataset):
         buckets_dict = dict(zip(range(len(time_buckets)), time_buckets))
         return buckets_dict
 
-    def _get_candidates_differences_dict(self, video):
+    def _get_candidates_differences_dict(self):
         '''
-        Returns a dict with the key as the time difference between the frames
-        and the value as a list of tuples (start_frame, end_frame) containing
-        all the pair of frames with that time difference for a given video
+        Returns a dict with:
+          - key as the sequence length of a video
+          - value as a dict with:
+            - key as the time difference between the frames
+            - value as a list of tuples (start_frame, end_frame) containing
+              all the pair of frames with that time difference for a given video
         '''
-        sequence_length = video.shape[0]
-        max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
-
+        logging.info('Getting candidates differences dict for all sequence lengths...')
         differences_dict = {}
-        differences = range(max_frame_diff+1)
-        for diff in differences:
-            start_frame, end_frame = 0, diff
-            while end_frame <= sequence_length-1:
-                differences_dict.setdefault(diff, []).append(tuple((start_frame, end_frame)))
-                start_frame += 1
-                end_frame += 1
+        max_frame_diff = np.hstack(self.time_buckets_dict.values()).max()
+        for video in self.data:
+            seq_len = video.shape[0]
+            if not differences_dict.get(seq_len):
+                differences_dict[seq_len] = {}
+                differences = range(max_frame_diff+1)
+                for diff in differences:
+                    start_frame, end_frame = 0, diff
+                    while end_frame <= seq_len-1:
+                        differences_dict[seq_len].setdefault(diff, []).append(tuple((start_frame, end_frame)))
+                        start_frame += 1
+                        end_frame += 1
+        logging.info('Done.')
         return differences_dict
 
     def _get_sample_at_difference(self, video_idx, bucket_idx):
@@ -362,8 +370,9 @@ class MazeDataset(Dataset):
         difference, and the last frame numbers for each pair (tuple)
         '''
         video = self.data[video_idx]
+        seq_len = video.shape[0]
         difference = np.random.choice(self.time_buckets_dict[bucket_idx])
-        candidates = self._get_candidates_differences_dict(video)[difference]
+        candidates = self.candidates_differences_dict[seq_len][difference]
         pair_idx = np.random.choice(len(candidates))
         image1_frame_idx, image2_frame_idx = candidates[pair_idx]
         image_pair_idxs = np.array([image1_frame_idx, image2_frame_idx])
