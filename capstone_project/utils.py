@@ -141,11 +141,14 @@ def print_config(vars_dict):
 def save_plot(project_dir, plots_dir, fig, filename):
     fig.savefig(os.path.join(project_dir, plots_dir, filename))
 
-def make_dirs(parent_dir, directories_to_create):
-    for directory in directories_to_create:
-        directory_path = os.path.join(parent_dir, directory)
-        if not os.path.exists(directory_path):
-            os.makedirs(directory_path)
+def make_dirs(parent_dir, child_dirs=None):
+    if not os.path.exists(parent_dir):
+        os.makedirs(parent_dir)
+    if child_dirs:
+        for directory in child_dirs:
+            directory_path = os.path.join(parent_dir, directory)
+            if not os.path.exists(directory_path):
+                os.makedirs(directory_path)
 
 def setup_logging(project_dir, logging_dir):
     log_path = os.path.join(project_dir, logging_dir)
@@ -261,16 +264,13 @@ def load_checkpoint(embedding_network, classification_network, optimizer, \
 
 def save_model(model, model_name, epoch, dataset, embedding_model_name, num_frames_in_stack, \
                num_pairs_per_example, project_dir, checkpoints_dir, use_pool=False, use_res=False):
-
-    model = model.to('cpu')
-
     checkpoint_name = '{}_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pt'\
                     .format(model_name, os.path.splitext(dataset)[0], embedding_model_name, \
                             num_frames_in_stack, num_pairs_per_example, use_pool*1, \
                             use_res*1, epoch)
     checkpoint_path = os.path.join(project_dir, checkpoints_dir, checkpoint_name)
     logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
-    torch.save(model, checkpoint_path)
+    torch.save(model.to('cpu'), checkpoint_path)
     logging.info('Done.')
 
 def load_model(project_dir, checkpoints_dir, checkpoint_file):
@@ -279,10 +279,14 @@ def load_model(project_dir, checkpoints_dir, checkpoint_file):
         logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
         model = torch.load(checkpoint_path)
         logging.info('Done.')
+
+        # Extract last trained epoch from checkpoint file
+        epoch_trained = int(os.path.splitext(checkpoint_file)[0].split('_epoch')[-1])
+
     else:
         raise FileNotFoundError('No checkpoint found at "{}"!'.format(checkpoint_path))
 
-    return model
+    return model, epoch_trained
 
 
 class EarlyStopping(object):

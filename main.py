@@ -128,12 +128,15 @@ def main():
         train_accuracy_history, val_accuracy_history, epoch_trained = \
             load_checkpoint(embedding_network, classification_network, optimizer, CHECKPOINT_FILE, \
                             PROJECT_DIR, CHECKPOINTS_DIR, DEVICE)
-        start_epoch = epoch_trained # Start from (epoch_trained+1) if checkpoint loaded
     elif EMB_MODEL_CKPT or CLS_MODEL_CKPT: # Otherwise check for entire model
         if EMB_MODEL_CKPT:
-            embedding_network = load_model(PROJECT_DIR, CHECKPOINTS_DIR, EMB_MODEL_CKPT)
+            embedding_network, epoch_trained_emb = load_model(PROJECT_DIR, CHECKPOINTS_DIR, EMB_MODEL_CKPT)
         if CLS_MODEL_CKPT:
-            classification_network = load_model(PROJECT_DIR, CHECKPOINTS_DIR, CLS_MODEL_CKPT)
+            classification_network, epoch_trained_cls = load_model(PROJECT_DIR, CHECKPOINTS_DIR, CLS_MODEL_CKPT)
+            assert epoch_trained_emb == epoch_trained_cls, \
+                'Mismatch in epochs trained for embedding network (={}) and classification network (={}).'\
+                .format(epoch_trained_emb, epoch_trained_cls)
+    start_epoch = epoch_trained # Start from (epoch_trained+1) if checkpoint loaded
 
     # Check if model is to be parallelized
     if TOTAL_GPUs > 1 and (PARALLEL or NGPU):
