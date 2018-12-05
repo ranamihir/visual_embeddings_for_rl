@@ -40,7 +40,8 @@ def train(embedding_network, classification_network, dataloader, \
         loss_train = loss.item() * len(x1) / len(dataloader.dataset)
         loss_hist.append(loss_train)
 
-        if (batch_idx+1) % (len(dataloader.dataset)//(50*y.shape[0])) == 0:
+        # Print 50 times in a batch; if dataset too small print every time (to avoid division by 0)
+        if (batch_idx+1) % max(1, (len(dataloader.dataset)//(50*source.shape[0]))) == 0:
             logging.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, (batch_idx+1) * y.shape[0], len(dataloader.dataset),
                 100. * (batch_idx+1) / len(dataloader), loss.item()))
