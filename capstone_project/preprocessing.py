@@ -162,7 +162,8 @@ def load_maze_data(project_dir, data_dir, filename, data_type, flatten=False, fo
     if not force and os.path.exists(file_path):
         logging.info('Loading "{}"...'.format(file_path))
         with h5py.File(file_path, 'r') as f:
-            data = [f[key][:] for key in f.keys()]
+            keys = sorted([int(key) for key in f.keys()])
+            data = [f[str(key)][:] for key in keys]
         logging.info('Done.')
     else:
         data = split_and_dump_maze_data(project_dir, data_dir, filename, data_type)
@@ -171,7 +172,6 @@ def load_maze_data(project_dir, data_dir, filename, data_type, flatten=False, fo
     logging.info('Min/Max/Avg/Total sequence length in {} data: '\
                  '{:.0f}/{:.0f}/{:.0f}/{:.0f}'.format(data_type, \
                  np.min(seq_lens), np.max(seq_lens), np.mean(seq_lens), np.sum(seq_lens)))
-
     if flatten:
         data = np.vstack([maze for maze in data])[np.newaxis,:]
     return data
@@ -180,16 +180,10 @@ def split_and_dump_maze_data(project_dir, data_dir, filename, data_type, val_siz
     file_path_in = os.path.join(project_dir, data_dir, '{}.h5'.format(filename))
     logging.info('Loading "{}"...'.format(file_path_in))
     with h5py.File(file_path_in, 'r') as f_in:
-        all_data, keys = [], []
-        for key in f_in.keys():
-            all_data.append(f_in[key][:])
-            keys.append(key)
+        all_data = []
+        keys = sorted([int(key) for key in f_in.keys()])
+        all_data = [f_in[str(key)][:] for key in keys]
     logging.info('Done.')
-
-    # Randomly shuffle data set
-    p = np.random.RandomState(1337).permutation(range(len(all_data)))
-    all_data = [all_data[i] for i in p]
-    keys = [keys[i] for i in p]
 
     n = len(all_data)
     num_test = int(test_size*len(all_data))
@@ -210,7 +204,7 @@ def split_and_dump_maze_data(project_dir, data_dir, filename, data_type, val_siz
     with h5py.File(file_path_out, 'w') as f_out:
         for i in range(len(data_dict[data_type])):
             # Retain the original keys when splitting into train/val/test
-            f_out.create_dataset(keys[start_idx[data_type]+i], data=data_dict[data_type][i])
+            f_out.create_dataset(str(start_idx[data_type]+i), data=data_dict[data_type][i])
     logging.info('Done.')
 
     return data_dict[data_type]
