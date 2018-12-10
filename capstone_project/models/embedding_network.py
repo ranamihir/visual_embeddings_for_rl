@@ -309,9 +309,14 @@ class RelativeNetwork(nn.Module):
         self.emb1 = nn.Embedding(6, embedding_size)
         self.emb2 = nn.Embedding(2, embedding_size)
 
-        # Conv layers
+        # Conv layers with batch-norm
         self.conv1 = nn.Conv2d(3 * embedding_size, 16, kernel_size=5, padding=2)
+        self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, padding=2)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.conv3 = nn.Conv2d(32, 32, kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm2d(32)
+
         self.conv1x1 = nn.Conv2d(64 + 2, 256, kernel_size=1)
 
         # Fully connected layers
@@ -327,8 +332,14 @@ class RelativeNetwork(nn.Module):
         x = torch.cat([self.emb0(x[:, 0]), self.emb1(x[:, 1]), self.emb2(x[:, 2])], -1)
         x = x.permute([0, 3, 1, 2]).contiguous()
 
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2(x), 2))
+        x = self.bn1(self.conv1(x))
+        x = F.relu(F.max_pool2d(x, 2))
+
+        x = self.bn2(self.conv2(x))
+        x = F.relu(F.max_pool2d(x, 2))
+
+        x = self.bn3(self.conv3(x))
+        x = F.relu(F.max_pool2d(x, 2))
 
         coords = torch.linspace(0, x.size(-1) - 1, x.size(-1)).to(x.device) / x.size(-1)
         x_coords = coords.unsqueeze(0).unsqueeze(0).unsqueeze(-1).repeat(x.size(0) ,1, 1, x.size(-1))
