@@ -87,3 +87,5 @@ python main.py --dataset mnist_test_seq --dataset-type fixed_mmnist --data-ext .
 python generate_lines_data.py --seq-len 50 --img-dim 121
 python main.py --dataset moving_bars_50_121 --dataset-type fixed_mmnist --data-ext .npy --num-frames 4
 ```
+
+![](https://github.com/NYU-CDS-Capstone-Project/learning_visual_embeddings/blob/master/deliverables/mazes.gif)
