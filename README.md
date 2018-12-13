@@ -71,6 +71,7 @@ optional arguments:
 ```
 python main.py --dataset all_mazes_10000_16_3_6 --dataset-type maze --epochs 15 --num-train 500000 --emb-model emb-cnn1 --num-frames 1  --num-channels 3 --flatten
 ```
+<img src="https://github.com/NYU-CDS-Capstone-Project/learning_visual_embeddings/blob/master/deliverables/mazes.gif" width="512" height="512" />
 
 ### Moving MNIST (Random Trajectories)
 ```
@@ -87,5 +88,3 @@ python main.py --dataset mnist_test_seq --dataset-type fixed_mmnist --data-ext .
 python generate_lines_data.py --seq-len 50 --img-dim 121
 python main.py --dataset moving_bars_50_121 --dataset-type fixed_mmnist --data-ext .npy --num-frames 4
 ```
-
-<img src="https://github.com/NYU-CDS-Capstone-Project/learning_visual_embeddings/blob/master/deliverables/mazes.gif" width="512" height="512" />
