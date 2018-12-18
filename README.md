@@ -39,7 +39,7 @@ optional arguments:
   -h, --help                          show this help message and exit
   --project-dir PROJECT_DIR           path to project directory
   --dataset DATASET                   name of dataset file in "data" directory
-                                      mnist_test_seq | moving_bars_20_121 | etc., default=mnist_test_seq
+                                      mnist_test_seq | moving_bars_20_121 | etc., default=all_mazes_16_3_6
   --dataset-type DATASET_TYPE         name of PyTorch Dataset to use
                                       maze | fixed_mmnist | random_mmnist, default=maze
   --data-ext DATA_EXT                 extension of dataset file in data directory

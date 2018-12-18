@@ -10,7 +10,7 @@ def get_args():
                         required=False, default='maze')
     parser.add_argument('--dataset', metavar='DATASET', dest='dataset', \
                         help='name of dataset file in data directory', \
-                        required=False, default='mnist_test_seq')
+                        required=False, default='all_mazes_16_3_6')
     parser.add_argument('--data-ext', metavar='DATA_EXT', dest='data_ext', \
                         help='extension of dataset file in data directory', \
                         required=False, default='.npy')
@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument('--offline', action='store_true', \
                         help='use offline preprocessing of data loader')
     parser.add_argument('--emb-model', metavar='EMB_MODEL', dest='emb_model', \
-                        help='name of embedding network', required=False, default='cnn')
+                        help='name of embedding network', required=False, default='emb-cnn1')
     parser.add_argument('--checkpoints-dir', metavar='CHECKPOINTS_DIR', dest='checkpoints_dir', \
                         help='path to checkpoints directory', required=False, default='checkpoints')
     parser.add_argument('--load-ckpt', metavar='LOAD_CHECKPOINT', dest='load_ckpt', \

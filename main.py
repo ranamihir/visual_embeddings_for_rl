@@ -218,25 +218,31 @@ def main():
                NUM_FRAMES_IN_STACK, NUM_PAIRS_PER_EXAMPLE, PROJECT_DIR, CHECKPOINTS_DIR, USE_POOL, USE_RES)
     logging.info('Done.')
 
+    title = '{}_{}'.format(EMB_MODEL, DATASET)
     if len(train_loss_history) and len(val_loss_history):
         logging.info('Plotting and saving loss histories...')
         fig = plt.figure(figsize=(10,8))
         plt.plot(train_loss_history, alpha=0.5, color='blue', label='train')
         xticks = [epoch*len(train_loader) for epoch in range(1, len(val_loss_history)+1)]
-        plt.plot(xticks, val_loss_history, alpha=0.5, color='orange', label='test')
+        plt.plot(xticks, val_loss_history, alpha=0.5, color='orange', marker='x', label='test')
         plt.legend()
-        plt.title('Loss vs. Iterations')
-        save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations.png')
+        plt.title('Loss vs. Iterations ({})'.format(DATASET), fontsize=16, ha='center')
+        plt.xlabel('Iterations', fontsize=16, ha='center')
+        plt.ylabel('Loss', fontsize=16, ha='center')
+        save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'loss_vs_iterations_{}.eps'.format(title))
         logging.info('Done.')
 
     if len(train_accuracy_history) and len(val_accuracy_history):
         logging.info('Plotting and saving accuracy histories...')
         fig = plt.figure(figsize=(10,8))
-        plt.plot(train_accuracy_history, alpha=0.5, color='blue', label='train')
-        plt.plot(val_accuracy_history, alpha=0.5, color='orange', label='test')
+        xticks = range(1, stop_epoch+1)
+        plt.plot(xticks, train_accuracy_history, alpha=0.5, color='blue', label='train')
+        plt.plot(xticks, val_accuracy_history, alpha=0.5, color='orange', label='test')
         plt.legend()
-        plt.title('Accuracy vs. Iterations')
-        save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_iterations.png')
+        plt.title('Accuracy vs. Epochs ({})'.format(DATASET), fontsize=16, ha='center')
+        plt.xlabel('Epochs', fontsize=16, ha='center')
+        plt.ylabel('Accuracy', fontsize=16, ha='center')
+        save_plot(PROJECT_DIR, PLOTS_DIR, fig, 'accuracies_vs_epochs_{}.eps'.format(title))
         logging.info('Done.')
 
 if __name__ == '__main__':

@@ -53,7 +53,7 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
     embedding_network.eval()
     classification_network.eval()
 
-    loss_test = 0.
+    loss_hist = []
     y_hist = []
     output_hist = []
     with torch.no_grad():
@@ -66,7 +66,8 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
             loss = criterion(classification_output, y)
 
             # Accurately compute loss, because of different batch size
-            loss_test += loss.item() / len(dataloader.dataset)
+            loss_test = loss.item() / len(dataloader.dataset)
+            loss_hist.append(loss_test)
 
             output_hist.append(classification_output)
             y_hist.append(y)
@@ -75,7 +76,7 @@ def test(embedding_network, classification_network, dataloader, criterion, devic
     y_true = torch.cat(y_hist, dim=0)
     accuracy = 100*y_predicted.eq(y_true.data.view_as(y_predicted)).float().mean().item()
 
-    return accuracy, loss_test
+    return accuracy, np.mean(loss_hist)
 
 def get_embeddings(embedding_network, dataloader, device):
     embedding_network.eval()
@@ -140,7 +141,7 @@ def print_config(vars_dict):
     logging.info(pformat(vars_dict))
 
 def save_plot(project_dir, plots_dir, fig, filename):
-    fig.savefig(os.path.join(project_dir, plots_dir, filename))
+    fig.savefig(os.path.join(project_dir, plots_dir, filename), dpi=1000)
 
 def make_dirs(parent_dir, child_dirs=None):
     if not os.path.exists(parent_dir):
