@@ -6,10 +6,10 @@ import logging
 import torch
 import torch.nn as nn
 
-from capstone_project.arguments import get_args
-from capstone_project.preprocessing import generate_embedding_dataloader
-from capstone_project.models.embedding_network import *
-from capstone_project.utils import *
+from visual_embeddings.arguments import get_args
+from visual_embeddings.preprocessing import generate_embedding_dataloader
+from visual_embeddings.models.embedding_network import *
+from visual_embeddings.utils import *
 
 
 args = get_args()

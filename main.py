@@ -10,11 +10,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from capstone_project.arguments import get_args
-from capstone_project.preprocessing import generate_all_offline_dataloaders, generate_online_dataloader
-from capstone_project.models.embedding_network import *
-from capstone_project.models.classification_network import *
-from capstone_project.utils import *
+from visual_embeddings.arguments import get_args
+from visual_embeddings.preprocessing import generate_all_offline_dataloaders, generate_online_dataloader
+from visual_embeddings.models.embedding_network import *
+from visual_embeddings.models.classification_network import *
+from visual_embeddings.utils import *
 
 
 def main():

@@ -8,8 +8,8 @@ from sklearn.model_selection import train_test_split
 from torchvision import transforms
 from torch.utils.data import DataLoader
 
-from capstone_project.datasets import *
-from capstone_project.utils import imshow, plot_video, save_object, load_object
+from visual_embeddings.datasets import *
+from visual_embeddings.utils import imshow, plot_video, save_object, load_object
 
 
 def generate_online_dataloader(args, dataset_size, data_type, transforms=None):
