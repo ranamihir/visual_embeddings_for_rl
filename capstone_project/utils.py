@@ -93,17 +93,16 @@ def get_embeddings(embedding_network, dataloader, device):
             all_embeddings.append(embeddings)
     return all_embeddings
 
-def save_embeddings(embeddings, project_dir, data_dir, embeddings_dir, \
-                    dataset, embedding_model_name, use_pool, use_res):
-    file_name = 'embeddings_{}_{}_pool{}_res{}.pkl'\
-                .format(os.path.splitext(dataset)[0], embedding_model_name, use_pool*1, use_res*1)
-    file_path = os.path.join(project_dir, data_dir, embeddings_dir, file_name)
+def save_embeddings(args, embeddings):
+    file_name = 'embeddings_{}_{}_pool{}_res{}.pt'\
+                .format(os.path.splitext(args.dataset_name)[0], args.emb_model, args.use_pool*1, args.use_res*1)
+    file_path = os.path.join(args.embeddings_dir, file_name)
     logging.info('Saving "{}"...'.format(file_path))
     save_object(embeddings, file_path)
     logging.info('Done.')
 
-def imshow(data, mean, std, project_dir, plots_dir, dataset):
-    logging.info('Plotting sample data and saving to "{}_sample.png"...'.format(dataset))
+def imshow(data, mean, std, args):
+    logging.info('Plotting sample data and saving to "{}_sample.png"...'.format(args.dataset_name))
     image_dim = data.shape[-1]
     images = data[np.random.RandomState(0).choice(len(data), size=1)]
     images = torch.from_numpy(images)
@@ -116,11 +115,11 @@ def imshow(data, mean, std, project_dir, plots_dir, dataset):
     plt.axis('off')
     plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
     plt.tight_layout()
-    save_plot(project_dir, plots_dir, fig, '{}_sample.png'.format(dataset))
+    save_plot(args, fig, '{}_sample.png'.format(args.dataset_name))
     logging.info('Done.')
 
-def plot_video(data, project_dir, plots_dir, dataset):
-    file_name = '{}_video_sample.png'.format(dataset)
+def plot_video(data, args):
+    file_name = '{}_video_sample.png'.format(args.dataset_name)
     logging.info('Plotting sample data and saving to "{}"...'.format(file_name))
     image_dim = data.shape[-1]
     images = torch.from_numpy(data)
@@ -132,16 +131,15 @@ def plot_video(data, project_dir, plots_dir, dataset):
     plt.axis('off')
     plt.imshow(np.transpose(np_image, axes=(1, 2, 0)))
     plt.tight_layout()
-    save_plot(project_dir, plots_dir, fig, file_name)
+    save_plot(args, fig, file_name)
     logging.info('Done.')
 
 def print_config(vars_dict):
-    vars_dict = {key: value for key, value in vars_dict.items() if key == key.upper() \
-                 and not isinstance(value, ModuleType)}
+    vars_dict = {key.upper(): value for key, value in vars_dict.items()}
     logging.info(pformat(vars_dict))
 
-def save_plot(project_dir, plots_dir, fig, filename):
-    fig.savefig(os.path.join(project_dir, plots_dir, filename), dpi=1000)
+def save_plot(args, fig, filename):
+    fig.savefig(os.path.join(args.plots_dir, filename), dpi=1000)
 
 def make_dirs(parent_dir, child_dirs=None):
     if not os.path.exists(parent_dir):
@@ -152,10 +150,9 @@ def make_dirs(parent_dir, child_dirs=None):
             if not os.path.exists(directory_path):
                 os.makedirs(directory_path)
 
-def setup_logging(project_dir, logging_dir):
-    log_path = os.path.join(project_dir, logging_dir)
+def setup_logging(logs_dir):
     filename = '{}.log'.format(time.strftime('%Y_%m_%d'))
-    log_handlers = [logging.FileHandler(os.path.join(log_path, filename)), logging.StreamHandler()]
+    log_handlers = [logging.FileHandler(os.path.join(logs_dir, filename)), logging.StreamHandler()]
     logging.basicConfig(format='%(asctime)s: %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', \
                         handlers=log_handlers, level=logging.DEBUG)
     logging.info('\n\n\n')
@@ -188,10 +185,9 @@ def load_object(filepath):
     return object
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
-                    val_loss_history, train_accuracy_history, val_accuracy_history, epoch, dataset, \
-                    embedding_model_name, num_frames_in_stack, num_pairs_per_example, project_dir, \
-                    checkpoints_dir, use_pool=False, use_res=False, is_parallel=False):
+                    val_loss_history, train_accuracy_history, val_accuracy_history, args, epoch):
 
+    is_parallel = args.ngpu or args.parallel
     state_dict = {
         'embedding_state_dict': embedding_network.module.state_dict() if is_parallel \
                                 else embedding_network.state_dict(),
@@ -205,41 +201,39 @@ def save_checkpoint(embedding_network, classification_network, optimizer, train_
         'val_accuracy_history': val_accuracy_history
     }
 
-    state_dict_name = 'state_dict_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
-                    .format(os.path.splitext(dataset)[0], embedding_model_name, num_frames_in_stack, \
-                            num_pairs_per_example, use_pool*1, use_res*1, epoch)
-    state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
+    state_dict_name = 'checkpoint_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pt'\
+                    .format(os.path.splitext(args.dataset_name)[0], args.emb_model, args.num_frames, \
+                            args.num_pairs, args.use_pool*1, args.use_res*1, epoch)
+    state_dict_path = os.path.join(args.checkpoints_dir, state_dict_name)
     logging.info('Saving checkpoint "{}"...'.format(state_dict_path))
     torch.save(state_dict, state_dict_path)
     logging.info('Done.')
 
-def remove_checkpoint(dataset, embedding_model_name, num_frames_in_stack, num_pairs_per_example, \
-                      project_dir, checkpoints_dir, epoch, use_pool=False, use_res=False):
-    state_dict_name = 'state_dict_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pkl'\
-                    .format(os.path.splitext(dataset)[0], embedding_model_name, num_frames_in_stack, \
-                            num_pairs_per_example, use_pool*1, use_res*1, epoch)
-    state_dict_path = os.path.join(project_dir, checkpoints_dir, state_dict_name)
+def remove_checkpoint(args, epoch):
+    state_dict_name = 'checkpoint_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pt'\
+                    .format(os.path.splitext(args.dataset_name)[0], args.emb_model, args.num_frames, \
+                            args.num_pairs, args.use_pool*1, args.use_res*1, epoch)
+    state_dict_path = os.path.join(args.checkpoints_dir, state_dict_name)
     logging.info('Removing checkpoint "{}"...'.format(state_dict_path))
     if os.path.exists(state_dict_path):
         os.remove(state_dict_path)
     logging.info('Done.')
 
-def load_checkpoint(embedding_network, classification_network, optimizer, \
-                    checkpoint_file, project_dir, checkpoints_dir, device):
+def load_checkpoint(embedding_network, classification_network, optimizer, args):
     # Note: Input model & optimizer should be pre-defined. This routine only updates their states.
 
     train_loss_history, val_loss_history = [], []
     train_accuracy_history, val_accuracy_history = [], []
     epoch_trained = 0
 
-    state_dict_path = os.path.join(project_dir, checkpoints_dir, checkpoint_file)
+    state_dict_path = os.path.join(args.checkpoints_dir, args.load_ckpt)
 
     if os.path.isfile(state_dict_path):
         logging.info('Loading checkpoint "{}"...'.format(state_dict_path))
         state_dict = torch.load(state_dict_path)
 
         # Extract last trained epoch from checkpoint file
-        epoch_trained = int(os.path.splitext(checkpoint_file)[0].split('_epoch')[-1])
+        epoch_trained = int(os.path.splitext(args.load_ckpt)[0].split('_epoch')[-1])
         assert epoch_trained == state_dict['epoch']
 
         train_loss_history = state_dict['train_loss_history']
@@ -254,7 +248,7 @@ def load_checkpoint(embedding_network, classification_network, optimizer, \
         for state in optimizer.state.values():
             for k, v in state.items():
                 if isinstance(v, torch.Tensor):
-                    state[k] = v.to(device)
+                    state[k] = v.to(args.device)
 
         logging.info('Successfully loaded checkpoint "{}".'.format(state_dict_path))
 
@@ -264,19 +258,18 @@ def load_checkpoint(embedding_network, classification_network, optimizer, \
     return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
             train_accuracy_history, val_accuracy_history, epoch_trained
 
-def save_model(model, model_name, epoch, dataset, embedding_model_name, num_frames_in_stack, \
-               num_pairs_per_example, project_dir, checkpoints_dir, use_pool=False, use_res=False):
+def save_model(model, model_name, args, epoch):
     checkpoint_name = '{}_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pt'\
-                    .format(model_name, os.path.splitext(dataset)[0], embedding_model_name, \
-                            num_frames_in_stack, num_pairs_per_example, use_pool*1, \
-                            use_res*1, epoch)
-    checkpoint_path = os.path.join(project_dir, checkpoints_dir, checkpoint_name)
+                    .format(model_name, os.path.splitext(args.dataset_name)[0], args.emb_model, \
+                            args.num_frames, args.num_pairs, args.use_pool*1, \
+                            args.use_res*1, epoch)
+    checkpoint_path = os.path.join(args.checkpoints_dir, checkpoint_name)
     logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
     torch.save(model.to('cpu'), checkpoint_path)
     logging.info('Done.')
 
-def load_model(project_dir, checkpoints_dir, checkpoint_file):
-    checkpoint_path = os.path.join(project_dir, checkpoints_dir, checkpoint_file)
+def load_model(args, checkpoint_file):
+    checkpoint_path = os.path.join(args.checkpoints_dir, checkpoint_file)
     if os.path.exists(checkpoint_path):
         logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
         model = torch.load(checkpoint_path)

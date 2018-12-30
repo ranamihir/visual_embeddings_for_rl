@@ -27,8 +27,6 @@ class FixedMovingMNISTDataset(Dataset):
         if self.transforms:
             x1 = self.transforms(x1)
             x2 = self.transforms(x2)
-            # x1 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x1], dim=0).squeeze(1)
-            # x2 = torch.stack([self.transforms(x[:,:,np.newaxis]) for x in x2], dim=0).squeeze(1)
 
         y = torch.from_numpy(np.array(y))
 
@@ -287,7 +285,7 @@ class RandomMovingMNISTDataset(Dataset):
 
 
 class MazeDataset(Dataset):
-    def __init__(self, data, time_buckets, num_channels=3, size=300000, return_embedding=False):
+    def __init__(self, data, time_buckets, num_channels=3, size=300000, return_indices=False):
         self.data = data
         self.size = size
         self.num_channels = num_channels
@@ -295,7 +293,7 @@ class MazeDataset(Dataset):
         self._check_data()
         self.candidates_differences_dict = self._get_candidates_differences_dict()
         self.transforms = transforms
-        self.return_embedding = return_embedding
+        self.return_indices = return_indices
 
     def __getitem__(self, index):
         video_idx = np.random.choice(len(self.data))
@@ -304,7 +302,7 @@ class MazeDataset(Dataset):
         (x1, x2), difference, (frame1, frame2) = self._get_sample_at_difference(video_idx, y)
         y = torch.from_numpy(np.array(y))
 
-        if self.return_embedding:
+        if self.return_indices:
             x1 = x1.clamp(0, 10)
             x2 = x2.clamp(0, 10)
             return x1.long(), x2.long(), y.long(), difference, (frame1, frame2)
@@ -383,16 +381,16 @@ class MazeDataset(Dataset):
 
 
 class MazeEmbeddingsDataset(Dataset):
-    def __init__(self, data, num_channels=3, return_embedding=False):
+    def __init__(self, data, num_channels=3, return_indices=False):
         self.data = data
         self.num_channels = num_channels
         self._check_data()
-        self.return_embedding = return_embedding
+        self.return_indices = return_indices
 
     def __getitem__(self, index):
         video = torch.from_numpy(np.array(self.data[index]))
 
-        if self.return_embedding:
+        if self.return_indices:
             video = torch.stack([img.clamp(0, 10).long() for img in video], dim=0)
         else:
             video = torch.stack([(img.clamp(0, 10)/10).float() for img in video], dim=0)
