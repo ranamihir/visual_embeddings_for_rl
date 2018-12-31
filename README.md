@@ -7,7 +7,7 @@ Members:
 
 
 ## Requirements
-For ease of setup, we have created a [requirements.yaml](https://github.com/NYU-CDS-Capstone-Project/learning_visual_embeddings/blob/master/requirements.yaml) file which will create a conda environment with the name `capstone_project` and install all dependencies and requirements into that environment. To do this:
+For ease of setup, we have created a [requirements.yaml](https://github.com/NYU-CDS-Capstone-Project/learning_visual_embeddings/blob/master/requirements.yaml) file which will create a conda environment with the name `visual_embeddings` and install all dependencies and requirements into that environment. To do this:
   - Install Anaconda and run:
 ```
 conda env create -f requirements.yaml
@@ -15,7 +15,7 @@ conda env create -f requirements.yaml
   - Optionally, if you want to run it on a GPU, install CUDA and cuDNN
 
 ## Installation
-Again, for simplicity, we have created a module with the name `capstone_project` which can be installed directly into pip by running the following command from the main project directory:
+Again, for simplicity, we have created a module with the name `visual_embeddings` which can be installed directly into pip by running the following command from the main project directory:
 ```
 pip install -e .
 ```
