@@ -186,7 +186,7 @@ def main():
     if len(train_accuracy_history) and len(val_accuracy_history):
         logging.info('Plotting and saving accuracy histories...')
         fig = plt.figure(figsize=(10,8))
-        xticks = range(1, stop_epoch+1)
+        xticks = range(1, len(val_accuracy_history)+1)
         plt.plot(xticks, train_accuracy_history, alpha=0.5, color='blue', label='train')
         plt.plot(xticks, val_accuracy_history, alpha=0.5, color='orange', label='test')
         plt.legend()
