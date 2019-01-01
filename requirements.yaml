@@ -1,4 +1,4 @@
-name: capstone_project
+name: visual_embeddings
 dependencies:
   - python==3.6.5
   - numpy
@@ -8,4 +8,6 @@ dependencies:
   - pip:
     - torch==0.4.1
     - torchvision
-    - "git+https://github.com/szagoruyko/pytorchviz"
+    - scipy
+    - scikit-learn
+    - h5py
