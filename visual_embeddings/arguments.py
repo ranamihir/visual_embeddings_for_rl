@@ -42,11 +42,9 @@ def get_args():
     parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', \
                         required=False, type=int, default=10)
     parser.add_argument('--device', metavar='DEVICE', dest='device', \
-                        help='device', required=False)
-    parser.add_argument('--device-id', metavar='DEVICE_ID', dest='device_id', \
-                        help='device id of gpu', required=False, type=int)
-    parser.add_argument('--ngpu', metavar='NGPU', dest='ngpu', \
-                        help='number of GPUs to use (0,1,...,ngpu-1)', required=False, type=int)
+                        help='device', default='cuda', required=False)
+    parser.add_argument('--device-ids', metavar='DEVICE_IDS', dest='device_ids', help='IDs of GPUs to use', \
+                        required=False, type=eval, default='[0]')
     parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
     parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', \
                         required=False, type=float, default=1e-4)
@@ -81,11 +79,8 @@ def get_args():
         args.num_test = int((args.test_size/args.train_size)*args.num_train)
         args.num_val = int((args.val_size/args.train_size)*args.num_train)
 
-    args.total_gpus = torch.cuda.device_count() # Number of total GPUs available
-    if args.ngpu:
-        assert args.total_gpus >= args.ngpu, '{} GPUs not available! Only {} GPU(s) available'.format(args.ngpu, args.total_gpus)
-    args.device = args.device if args.device else 'cuda' if torch.cuda.is_available() else 'cpu'
-    if args.device_id and 'cuda' in args.device:
-        torch.cuda.set_device(args.device_id)
+    total_gpus = torch.cuda.device_count() # Total number of GPUs available
+    assert total_gpus >= len(args.device_ids), '{} GPUs not available! Only {} GPU(s) available'.format(len(args.device_ids), total_gpus)
+    args.device = 'cuda' if (args.device == 'cuda' and torch.cuda.is_available() and (len(args.device_ids) > 0 or args.parallel)) else 'cpu'
 
     return args

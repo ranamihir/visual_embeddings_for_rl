@@ -18,21 +18,22 @@ from visual_embeddings.utils import *
 
 
 def main():
-    torch.set_num_threads(1) # Prevent error on KeyboardInterrupt with multiple GPUs
+    args = get_args() # Get arguments
 
-    # Get arguments
-    args = get_args()
+    torch.set_num_threads(1) # Prevent error on KeyboardInterrupt with multiple GPUs
+    if args.device == 'cuda': # Set correct default GPU
+        torch.cuda.set_device(args.device_ids[0])
 
     # Create all required directories if not present
     make_dirs(args.project_dir, [args.checkpoints_dir])
     make_dirs(args.logs_dir)
     make_dirs(args.plots_dir)
 
-    # Setup configuration for logging
-    setup_logging(args.logs_dir)
+    setup_logging(args.logs_dir) # Setup configuration for logging
 
+    # Print all arguments
     global_vars = vars(args).copy()
-    print_config(global_vars) # Print all arguments
+    print_config(global_vars)
 
     if args.offline:
         train_loader, val_loader, test_loader = generate_all_offline_dataloaders(args)
@@ -95,15 +96,14 @@ def main():
             .format(epoch_trained, epoch_trained_cls)
     start_epoch = epoch_trained # Start from (epoch_trained+1) if checkpoint loaded
 
-    # Check if model is to be parallelized
-    if args.total_gpus > 1 and (args.parallel or args.ngpu):
-        args.device_ids = range(args.total_gpus) if args.parallel else range(args.ngpu)
+    # Parallelize models
+    embedding_network = embedding_network.to(args.device)
+    classification_network = classification_network.to(args.device)
+    if args.device == 'cuda':
         logging.info('Using {} GPUs...'.format(len(args.device_ids)))
         embedding_network = nn.DataParallel(embedding_network, device_ids=args.device_ids)
         classification_network = nn.DataParallel(classification_network, device_ids=args.device_ids)
         logging.info('Done.')
-    embedding_network = embedding_network.to(args.device)
-    classification_network = classification_network.to(args.device)
 
     early_stopping = EarlyStopping(mode='maximize', min_delta=0.5, patience=10)
     best_epoch = start_epoch+1

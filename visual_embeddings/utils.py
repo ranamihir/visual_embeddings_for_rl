@@ -186,12 +186,10 @@ def load_object(filepath):
 
 def save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, \
                     val_loss_history, train_accuracy_history, val_accuracy_history, args, epoch):
-
-    is_parallel = args.ngpu or args.parallel
     state_dict = {
-        'embedding_state_dict': embedding_network.module.state_dict() if is_parallel \
+        'embedding_state_dict': embedding_network.module.state_dict() if args.device == 'cuda' \
                                 else embedding_network.state_dict(),
-        'classification_state_dict': classification_network.module.state_dict() if is_parallel \
+        'classification_state_dict': classification_network.module.state_dict() if args.device == 'cuda' \
                                      else classification_network.state_dict(),
         'optimizer': optimizer.state_dict(),
         'epoch': epoch,
