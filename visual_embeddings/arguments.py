@@ -29,6 +29,15 @@ def get_args():
                         required=False, default='.npy')
     parser.add_argument('--offline', action='store_true', \
                         help='use offline preprocessing of data loader')
+    parser.add_argument('--force', action='store_true', \
+                        help='overwrites all existing dumped data sets (if used with `--offline`)')
+    parser.add_argument('--cpu', action='store_true', help='use CPU')
+    parser.add_argument('--cuda', action='store_true', help='use CUDA, default id: 0')
+    parser.add_argument('--device', metavar='DEVICE', dest='device', \
+                        help='device', default='cuda', required=False)
+    parser.add_argument('--device-ids', metavar='DEVICE_IDS', dest='device_ids', help='IDs of GPUs to use', \
+                        required=False, type=eval, default='[0]')
+    parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
     parser.add_argument('--emb-model', metavar='EMB_MODEL', dest='emb_model', \
                         help='name of embedding network', required=False, default='emb-cnn1')
     parser.add_argument('--load-ckpt', metavar='LOAD_CHECKPOINT', dest='load_ckpt', \
@@ -41,13 +50,6 @@ def get_args():
                         required=False, type=int, default=64)
     parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', \
                         required=False, type=int, default=10)
-    parser.add_argument('--cpu', action='store_true', help='use CPU')
-    parser.add_argument('--cuda', action='store_true', help='use CUDA, default id: 0')
-    parser.add_argument('--device', metavar='DEVICE', dest='device', \
-                        help='device', default='cuda', required=False)
-    parser.add_argument('--device-ids', metavar='DEVICE_IDS', dest='device_ids', help='IDs of GPUs to use', \
-                        required=False, type=eval, default='[0]')
-    parser.add_argument('--parallel', action='store_true', help='use all GPUs available', required=False)
     parser.add_argument('--lr', metavar='LR', dest='lr', help='learning rate', \
                         required=False, type=float, default=1e-4)
     parser.add_argument('--flatten', action='store_true', help='flatten data into 1 long video')
@@ -62,8 +64,6 @@ def get_args():
     parser.add_argument('--use-pool', action='store_true', \
                         help='use pooling instead of strided convolutions')
     parser.add_argument('--use-res', action='store_true', help='use residual layers')
-    parser.add_argument('--force', action='store_true', \
-                        help='overwrites all existing dumped data sets (if used with `--offline`)')
 
     args = parser.parse_args()
 

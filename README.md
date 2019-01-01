@@ -1,6 +1,6 @@
 # DS-GA 1006 Capstone Project and Presentation
 
-# Learning Visual Embeddings
+# Learning Visual Embeddings for Reinforcement Learning
 Members:
   - Mihir Rana
   - Kenil Tanna
@@ -22,48 +22,59 @@ pip install -e .
 
 ## Usage
 ```
-usage: main.py [-h] [--project-dir PROJECT_DIR] [--dataset-type DATASET_TYPE]
-               [--dataset DATASET] [--data-ext DATA_EXT] [--data-dir DATA_DIR]
-               [--offline] [--checkpoints-dir CHECKPOINTS_DIR]
-               [--load-ckpt LOAD_CHECKPOINT] [--batch-size BATCH_SIZE]
-               [--epochs EPOCHS] [--device DEVICE] [--device-id DEVICE_ID]
-               [--ngpu NGPU] [--parallel] [--lr LR] [--num-train NUM_TRAIN]
+usage: main.py [-h] [--project-dir PROJECT_DIR] [--data-dir DATA_DIR]
+               [--plots-dir PLOTS_DIR] [--logs-dir LOGS_DIR]
+               [--checkpoints-dir CHECKPOINTS_DIR]
+               [--embeddings-dir EMBEDDINGS_DIR] [--dataset-type DATASET_TYPE]
+               [--dataset DATASET] [--data-ext DATA_EXT] [--offline] [--force]
+               [--cpu] [--cuda] [--device DEVICE] [--device-ids DEVICE_IDS]
+               [--parallel] [--emb-model EMB_MODEL]
+               [--load-ckpt LOAD_CHECKPOINT] [--load-emb-ckpt LOAD_EMB_CKPT]
+               [--load-cls-ckpt LOAD_CLS_CKPT] [--batch-size BATCH_SIZE]
+               [--epochs EPOCHS] [--lr LR] [--flatten] [--num-train NUM_TRAIN]
                [--num-frames NUM_FRAMES_IN_STACK]
                [--num-channels NUM_CHANNELS]
                [--num-pairs NUM_PAIRS_PER_EXAMPLE] [--use-pool] [--use-res]
-               [--force]
 
-Learning Visual Embeddings
+Learning Visual Embeddings for Reinforcement Learning
 
 optional arguments:
   -h, --help                          show this help message and exit
   --project-dir PROJECT_DIR           path to project directory
-  --dataset DATASET                   name of dataset file in "data" directory
-                                      mnist_test_seq | moving_bars_20_121 | etc., default=all_mazes_16_3_6
+  --data-dir DATA_DIR                 path to data directory (used if different from "data/")
+  --plots-dir PLOTS_DIR               path to plots directory (used if different from "logs"plots/)
+  --logs-dir LOGS_DIR                 path to logs directory (used if different from "logs/")
+  --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory (used if different from "checkpoints/")
+  --embeddings-dir EMBEDDINGS_DIR     path to embeddings directory (used if different from "checkpoints/embeddings/")
   --dataset-type DATASET_TYPE         name of PyTorch Dataset to use
                                       maze | fixed_mmnist | random_mmnist, default=maze
+  --dataset DATASET                   name of dataset file in "data" directory
+                                      mnist_test_seq | moving_bars_20_121 | etc., default=all_mazes_16_3_6
   --data-ext DATA_EXT                 extension of dataset file in data directory
-  --data-dir DATA_DIR                 path to data directory (used if different from "data")
   --offline                           use offline preprocessing of data loader
-  --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory (used if different from "checkpoints")
+  --force                             overwrites all existing dumped data sets (if used with `--offline`)
+  --cpu                               use CPU
+  --cuda                              use CUDA, default id: 0
+  --device                            cuda | cpu, default=cuda
+                                      device to train on
+  --device-ids DEVICE_IDS             IDs of GPUs to use
+  --parallel                          use all GPUs available
+  --emb-model EMB_MODEL               name of embedding network
   --load-ckpt LOAD_CHECKPOINT         name of checkpoint file to load
+  --load-emb-ckpt LOAD_EMB_CKPT       name of embedding network file to load
+  --load-cls-ckpt LOAD_CLS_CKPT       name of classification network file to load
   --batch-size BATCH_SIZE             input batch size, default=64
   --epochs EPOCHS                     number of epochs, default=10
   --lr LR                             learning rate, default=1e-4
-  --device                            cuda | cpu, default=cuda
-                                      device to train on
-  --device-id DEVICE_ID               device id of gpu, default=0
-  --ngpu NGPU                         number of GPUs to use (0,1,...,ngpu-1)
-  --parallel                          use all GPUs available
+  --flatten                           flatten data into 1 long video
   --num-train NUM_TRAIN               number of training examples
   --num-frames NUM_FRAMES_IN_STACK    number of stacked frames, default=2
   --num-channels NUM_CHANNELS         number of channels in input image, default=1
   --num-pairs NUM_PAIRS_PER_EXAMPLE   number of pairs per video, default=5
   --use-pool                          use max pooling instead of strided convolutions
   --use-res                           use residual layers
-  --force                             overwrites all existing dumped data sets (if used with `--offline`)
-```
 
+```
 
 ## Training
 
@@ -71,7 +82,7 @@ optional arguments:
 ```
 python main.py --dataset all_mazes_10000_16_3_6 --dataset-type maze --epochs 15 --num-train 500000 --emb-model emb-cnn1 --num-frames 1  --num-channels 3 --flatten
 ```
-<img src="https://github.com/NYU-CDS-Capstone-Project/learning_visual_embeddings/blob/master/deliverables/mazes.gif" width="512" height="512" />
+<img src="https://github.com/NYU-CDS-Capstone-Project/learning_visual_embeddings/blob/master/material/mazes.gif" width="512" height="512" />
 
 ### Moving MNIST (Random Trajectories)
 ```
