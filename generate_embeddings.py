@@ -12,23 +12,25 @@ from visual_embeddings.models.embedding_network import *
 from visual_embeddings.utils import *
 
 
-args = get_args()
-
-assert args.load_emb_ckpt is not None, 'Model checkpoint not provided.'
-args.batch_size = 1     # Each video separately
-
 def main():
+    args = get_args() # Get arguments
+
     torch.set_num_threads(1) # Prevent error on KeyboardInterrupt with multiple GPUs
+    if args.device == 'cuda': # Set correct default GPU
+        torch.cuda.set_device(args.device_ids[0])
+
+    assert args.load_emb_ckpt is not None, 'Model checkpoint not provided.'
+    args.batch_size = 1     # Each video separately
 
     # Create all required directories if not present
     make_dirs(args.logs_dir)
     make_dirs(args.embeddings_dir)
 
-    # Setup configuration for logging
-    setup_logging(args.logs_dir)
+    setup_logging(args.logs_dir) # Setup configuration for logging
 
+    # Print all arguments
     global_vars = vars(args).copy()
-    print_config(global_vars) # Print all arguments
+    print_config(global_vars)
 
     dataloader = generate_embedding_dataloader(args)
 
@@ -38,13 +40,12 @@ def main():
     logging.info('Done.')
     logging.info(embedding_network)
 
-    # Check if model is to be parallelized
-    if args.total_gpus > 1 and (args.parallel or args.ngpu):
-        args.device_ids = range(args.total_gpus) if args.parallel else range(args.ngpu)
-        logging.info('Using {} GPUs...'.format(len(args.device_ids)))
+    # Parallelize models
+    embedding_network = embedding_network.to(args.device)
+    if args.device == 'cuda':
+        logging.info('Using {} GPU(s)...'.format(len(args.device_ids)))
         embedding_network = nn.DataParallel(embedding_network, device_ids=args.device_ids)
         logging.info('Done.')
-    embedding_network = embedding_network.to(args.device)
 
     try:
         embeddings = get_embeddings(
