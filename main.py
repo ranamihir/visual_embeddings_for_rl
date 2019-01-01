@@ -100,7 +100,7 @@ def main():
     embedding_network = embedding_network.to(args.device)
     classification_network = classification_network.to(args.device)
     if args.device == 'cuda':
-        logging.info('Using {} GPUs...'.format(len(args.device_ids)))
+        logging.info('Using {} GPU(s)...'.format(len(args.device_ids)))
         embedding_network = nn.DataParallel(embedding_network, device_ids=args.device_ids)
         classification_network = nn.DataParallel(classification_network, device_ids=args.device_ids)
         logging.info('Done.')

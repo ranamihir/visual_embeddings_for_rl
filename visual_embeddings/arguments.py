@@ -41,6 +41,8 @@ def get_args():
                         required=False, type=int, default=64)
     parser.add_argument('--epochs', metavar='EPOCHS', dest='epochs', help='number of epochs', \
                         required=False, type=int, default=10)
+    parser.add_argument('--cpu', action='store_true', help='use CPU')
+    parser.add_argument('--cuda', action='store_true', help='use CUDA, default id: 0')
     parser.add_argument('--device', metavar='DEVICE', dest='device', \
                         help='device', default='cuda', required=False)
     parser.add_argument('--device-ids', metavar='DEVICE_IDS', dest='device_ids', help='IDs of GPUs to use', \
@@ -79,8 +81,15 @@ def get_args():
         args.num_test = int((args.test_size/args.train_size)*args.num_train)
         args.num_val = int((args.val_size/args.train_size)*args.num_train)
 
-    total_gpus = torch.cuda.device_count() # Total number of GPUs available
-    assert total_gpus >= len(args.device_ids), '{} GPUs not available! Only {} GPU(s) available'.format(len(args.device_ids), total_gpus)
-    args.device = 'cuda' if (args.device == 'cuda' and torch.cuda.is_available() and (len(args.device_ids) > 0 or args.parallel)) else 'cpu'
+    if (args.device == 'cuda' or args.cuda) and torch.cuda.is_available():
+        total_gpus = torch.cuda.device_count() # Total number of GPUs available
+        if args.cuda: # Train on 1 GPU
+            args.device_ids = [0]
+        elif args.parallel: # Train on all GPUs
+            args.device_ids = range(total_gpus)
+        else: # Train on specified GPUs
+            assert total_gpus >= len(args.device_ids), '{} GPUs not available! Only {} GPU(s) available'.format(len(args.device_ids), total_gpus)
+    else:
+        args.device = 'cpu'
 
     return args
