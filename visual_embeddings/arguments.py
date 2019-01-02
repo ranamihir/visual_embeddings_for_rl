@@ -81,7 +81,7 @@ def get_args():
         args.num_test = int((args.test_size/args.train_size)*args.num_train)
         args.num_val = int((args.val_size/args.train_size)*args.num_train)
 
-    if (args.device == 'cuda' or args.cuda) and torch.cuda.is_available():
+    if (not args.cpu) and (args.device == 'cuda' or args.cuda) and torch.cuda.is_available():
         total_gpus = torch.cuda.device_count() # Total number of GPUs available
         if args.cuda: # Train on 1 GPU
             args.device_ids = [0]

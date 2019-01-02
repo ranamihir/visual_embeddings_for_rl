@@ -89,7 +89,7 @@ def main():
         train_accuracy_history, val_accuracy_history, epoch_trained = \
             load_checkpoint(embedding_network, classification_network, optimizer, args)
     elif args.load_emb_ckpt and args.load_cls_ckpt: # Otherwise check for entire model
-        embedding_network, epoch_trained = load_model(args, args.load_emb_ckpt)
+        embedding_network, optimizer, epoch_trained = load_model(args, args.load_emb_ckpt, optimizer)
         classification_network, epoch_trained_cls = load_model(args, args.load_cls_ckpt)
         assert epoch_trained == epoch_trained_cls, \
             'Mismatch in epochs trained for embedding network (={}) and classification network (={}).'\
@@ -165,8 +165,8 @@ def main():
     print_config(global_vars) # Print all global variables before saving checkpointing
     save_checkpoint(embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
                     train_accuracy_history, val_accuracy_history, args, stop_epoch)
-    save_model(embedding_network, 'embedding_network', args, stop_epoch)
-    save_model(classification_network, 'classification_network', args, stop_epoch)
+    save_model(embedding_network, 'embedding_network', optimizer, args, stop_epoch)
+    save_model(classification_network, 'classification_network', optimizer, args, stop_epoch)
     logging.info('Done.')
 
     title = '{}_{}'.format(args.emb_model, args.dataset_name)

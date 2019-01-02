@@ -10,6 +10,7 @@ from itertools import islice
 from pprint import pformat
 
 import torch
+import torch.nn as nn
 from torchvision.utils import make_grid
 
 import matplotlib
@@ -256,29 +257,54 @@ def load_checkpoint(embedding_network, classification_network, optimizer, args):
     return embedding_network, classification_network, optimizer, train_loss_history, val_loss_history, \
             train_accuracy_history, val_accuracy_history, epoch_trained
 
-def save_model(model, model_name, args, epoch):
+def save_model(model, model_name, optimizer, args, epoch):
     checkpoint_name = '{}_{}_{}_numframes{}_numpairs{}_pool{}_res{}_epoch{}.pt'\
                     .format(model_name, os.path.splitext(args.dataset_name)[0], args.emb_model, \
                             args.num_frames, args.num_pairs, args.use_pool*1, \
                             args.use_res*1, epoch)
     checkpoint_path = os.path.join(args.checkpoints_dir, checkpoint_name)
-    logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
-    torch.save(model.to('cpu'), checkpoint_path)
+    logging.info('Saving model checkpoint "{}"...'.format(checkpoint_path))
+
+    # Save model on CPU
+    model.to('cpu')
+    import pdb; pdb.set_trace()
+    checkpoint = {
+        'model': model,
+        'optimizer': optimizer.state_dict()
+    }
+    torch.save(checkpoint, checkpoint_path)
+
+    # Move model back to original device(s)
+    model.to(args.device)
+    if args.device == 'cuda':
+        model = nn.DataParallel(model, device_ids=args.device_ids)
     logging.info('Done.')
 
-def load_model(args, checkpoint_file):
+def load_model(args, checkpoint_file, optimizer=None):
     checkpoint_path = os.path.join(args.checkpoints_dir, checkpoint_file)
     if os.path.exists(checkpoint_path):
-        logging.info('Saving checkpoint "{}"...'.format(checkpoint_path))
-        model = torch.load(checkpoint_path)
+        logging.info('Loading model checkpoint "{}"...'.format(checkpoint_path))
+
+        checkpoint = torch.load(checkpoint_path)
+        model = checkpoint['model']
+
+        if optimizer:
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            for state in optimizer.state.values():
+                for k, v in state.items():
+                    if isinstance(v, torch.Tensor):
+                        state[k] = v.to(args.device)
+
         logging.info('Done.')
 
         # Extract last trained epoch from checkpoint file
         epoch_trained = int(os.path.splitext(checkpoint_file)[0].split('_epoch')[-1])
 
     else:
-        raise FileNotFoundError('No checkpoint found at "{}"!'.format(checkpoint_path))
+        raise FileNotFoundError('No model checkpoint found at "{}"!'.format(checkpoint_path))
 
+    if optimizer:
+        return model, optimizer, epoch_trained
     return model, epoch_trained
 
 
