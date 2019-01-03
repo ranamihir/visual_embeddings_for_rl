@@ -5,15 +5,32 @@ Members:
 
 
 ## Requirements
-For ease of setup, we have created a [requirements.yaml](https://github.com/ranamihir/visual_embeddings_for_rl/blob/master/requirements.yaml) file which will create a conda environment with the name `visual_embeddings` and install all dependencies and requirements into that environment. To do this:
-  - Install Anaconda and run:
-```
-conda env create -f requirements.yaml
-```
-  - Optionally, if you want to run it on a GPU, install CUDA and cuDNN
+For ease of setup, we have created a [requirements.yaml](https://github.com/ranamihir/visual_embeddings_for_rl/blob/master/requirements.yaml) file which will create a conda environment with the name `visual_embeddings` and install all dependencies and requirements into that environment.
+
+To do this, install [Anaconda](https://www.anaconda.com/) and do the following:
+  - ```bash conda env create -f requirements.yaml```
+  - ```bash source activate visual_embeddings```
+  - Install [tensorflow](https://www.tensorflow.org/). In most cases,
+    <br>
+    ```bash pip install tensorflow-gpu # if you have a CUDA-compatible gpu and proper drivers```
+    <br>
+    or
+    <br>
+    ```bash pip install tensorflow # otherwise```
+    <br>
+    should be sufficient.
+  - Install [OpenAI baselines](https://github.com/openai/baselines)
+  - Install [MiniGrid](https://github.com/maximecb/gym-minigrid):
+    <br>
+    ```bash
+    git clone https://github.com/maximecb/gym-minigrid.git
+    cd gym-minigrid
+    pip install -e .
+    cd ..
+    ```
 
 ## Installation
-Again, for simplicity, we have created a module with the name `visual_embeddings` which can be installed directly into pip by running the following command from the main project directory:
+Again, for simplicity, we have created a module with the name `visual_embeddings` which can be installed directly into PyPI by running the following command from the main project directory:
 ```
 pip install -e .
 ```
@@ -76,23 +93,25 @@ optional arguments:
 
 ## Training
 
-### Minigrid Maze
+### Embedding Generation
+
+#### Minigrid Maze
 ```
 python main.py --dataset all_mazes_10000_16_3_6 --dataset-type maze --epochs 15 --num-train 500000 --emb-model emb-cnn1 --num-frames 1  --num-channels 3 --flatten
 ```
 <img src="https://github.com/ranamihir/visual_embeddings_for_rl/blob/master/material/mazes.gif" width="512" height="512" />
 
-### Moving MNIST (Random Trajectories)
+#### Moving MNIST (Random Trajectories)
 ```
 python main.py --dataset moving_mnist --dataset-type random_mmnist --data-ext .h5 --num-frames 4 --use-pool
 ```
 
-### Moving MNIST (Fixed Trajectories)
+#### Moving MNIST (Fixed Trajectories)
 ```
 python main.py --dataset mnist_test_seq --dataset-type fixed_mmnist --data-ext .npy --num-frames 2 --use-pool
 ```
 
-### Moving Bars
+#### Moving Bars
 ```
 python generate_lines_data.py --seq-len 50 --img-dim 121
 python main.py --dataset moving_bars_50_121 --dataset-type fixed_mmnist --data-ext .npy --num-frames 4
