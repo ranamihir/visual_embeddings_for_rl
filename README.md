@@ -10,15 +10,7 @@ For ease of setup, we have created a [requirements.yaml](https://github.com/rana
 To do this, install [Anaconda](https://www.anaconda.com/) and do the following:
   - ```bash conda env create -f requirements.yaml```
   - ```bash source activate visual_embeddings```
-  - Install [tensorflow](https://www.tensorflow.org/). In most cases,
-    <br>
-    ```bash pip install tensorflow-gpu # if you have a CUDA-compatible gpu and proper drivers```
-    <br>
-    or
-    <br>
-    ```bash pip install tensorflow # otherwise```
-    <br>
-    should be sufficient.
+  - Install [tensorflow](https://www.tensorflow.org/)
   - Install [OpenAI baselines](https://github.com/openai/baselines)
   - Install [MiniGrid](https://github.com/maximecb/gym-minigrid):
     <br>
