@@ -5,12 +5,14 @@ Members:
 
 
 ## Requirements
-For ease of setup, we have created a [requirements.yaml](https://github.com/ranamihir/visual_embeddings_for_rl/blob/master/requirements.yaml) file which will create a conda environment with the name `visual_embeddings` and install all dependencies and requirements into that environment.
+For ease of setup, we have created a [requirements.yaml](https://github.com/ranamihir/visual_embeddings_for_rl/blob/master/requirements.yaml) file which will create a conda environment with the name `visual_embeddings` and install most dependencies and requirements into that environment.
 
-To do this, install [Anaconda](https://www.anaconda.com/) and do the following:
-  - ```bash conda env create -f requirements.yaml```
-  - ```bash source activate visual_embeddings```
-  - Install [tensorflow](https://www.tensorflow.org/)
+To do this, install [Anaconda](https://www.anaconda.com/) and run the following commands:
+  - ```bash
+    conda env create -f requirements.yaml
+    source activate visual_embeddings
+    ```
+Additionally:
   - Install [OpenAI baselines](https://github.com/openai/baselines)
   - Install [MiniGrid](https://github.com/maximecb/gym-minigrid):
     <br>
