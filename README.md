@@ -50,11 +50,11 @@ Learning Visual Embeddings for Reinforcement Learning
 optional arguments:
   -h, --help                          show this help message and exit
   --project-dir PROJECT_DIR           path to project directory
-  --data-dir DATA_DIR                 path to data directory (used if different from "data/")
-  --plots-dir PLOTS_DIR               path to plots directory (used if different from "logs"plots/)
-  --logs-dir LOGS_DIR                 path to logs directory (used if different from "logs/")
-  --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory (used if different from "checkpoints/")
-  --embeddings-dir EMBEDDINGS_DIR     path to embeddings directory (used if different from "checkpoints/embeddings/")
+  --data-dir DATA_DIR                 path to data directory, default="data/"
+  --plots-dir PLOTS_DIR               path to plots directory, default="logs"plots/
+  --logs-dir LOGS_DIR                 path to logs directory, default="logs/"
+  --checkpoints-dir CHECKPOINTS_DIR   path to checkpoints directory, default="checkpoints/"
+  --embeddings-dir EMBEDDINGS_DIR     path to embeddings directory, default="checkpoints/embeddings/"
   --dataset-type DATASET_TYPE         name of PyTorch Dataset to use
                                       maze | fixed_mmnist | random_mmnist, default=maze
   --dataset DATASET                   name of dataset file in "data" directory
@@ -68,21 +68,20 @@ optional arguments:
                                       device to train on
   --device-ids DEVICE_IDS             IDs of GPUs to use
   --parallel                          use all GPUs available
-  --emb-model EMB_MODEL               name of embedding network
-  --load-ckpt LOAD_CHECKPOINT         name of checkpoint file to load
-  --load-emb-ckpt LOAD_EMB_CKPT       name of embedding network file to load
-  --load-cls-ckpt LOAD_CLS_CKPT       name of classification network file to load
+  --emb-model EMB_MODEL               type of embedding network
+  --load-ckpt LOAD_CHECKPOINT         checkpoint file to load
+  --load-emb-ckpt LOAD_EMB_CKPT       embedding network checkpoint file to load
+  --load-cls-ckpt LOAD_CLS_CKPT       classification network checkpoint file to load
   --batch-size BATCH_SIZE             input batch size, default=64
   --epochs EPOCHS                     number of epochs, default=10
   --lr LR                             learning rate, default=1e-4
   --flatten                           flatten data into 1 long video
-  --num-train NUM_TRAIN               number of training examples
+  --num-train NUM_TRAIN               number of paired training examples, default=500000
   --num-frames NUM_FRAMES_IN_STACK    number of stacked frames, default=2
   --num-channels NUM_CHANNELS         number of channels in input image, default=1
   --num-pairs NUM_PAIRS_PER_EXAMPLE   number of pairs per video, default=5
-  --use-pool                          use max pooling instead of strided convolutions
-  --use-res                           use residual layers
-
+  --use-pool                          use max pooling instead of strided convolutions in embedding network
+  --use-res                           use residual layers in embedding network
 ```
 
 ## Training
@@ -91,7 +90,7 @@ optional arguments:
 
 #### Minigrid Maze
 ```
-python main.py --dataset all_mazes_10000_16_3_6 --dataset-type maze --epochs 15 --num-train 500000 --emb-model emb-cnn1 --num-frames 1  --num-channels 3 --flatten
+python main.py --dataset all_mazes_10000_16_3_6 --dataset-type maze --epochs 15 --emb-model emb-cnn1 --num-frames 1  --num-channels 3 --flatten
 ```
 <img src="https://github.com/ranamihir/visual_embeddings_for_rl/blob/master/material/mazes.gif" width="512" height="512" />
 
