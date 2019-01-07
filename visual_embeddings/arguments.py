@@ -8,7 +8,7 @@ def get_args():
     parser.add_argument('--project-dir', metavar='PROJECT_DIR', dest='project_dir', \
                         help='path to project directory', required=False, default='.')
     parser.add_argument('--data-dir', metavar='DATA_DIR', dest='data_dir', \
-                        help='path to data directory (used if different from "data")', \
+                        help='path to data directory, default="data"', \
                         required=False, default='data')
     parser.add_argument('--plots-dir', metavar='PLOTS_DIR', dest='plots_dir', \
                         help='path to plots directory', required=False)
@@ -54,7 +54,7 @@ def get_args():
                         required=False, type=float, default=1e-4)
     parser.add_argument('--flatten', action='store_true', help='flatten data into 1 long video')
     parser.add_argument('--num-train', metavar='NUM_TRAIN', dest='num_train', \
-                        help='number of training examples', required=False, type=int, default=50000)
+                        help='number of training examples', required=False, type=int, default=500000)
     parser.add_argument('--num-frames', metavar='NUM_FRAMES_IN_STACK', dest='num_frames', \
                         help='number of stacked frames', required=False, type=int, default=2)
     parser.add_argument('--num-channels', metavar='NUM_CHANNELS', dest='num_channels', \
@@ -89,7 +89,10 @@ def get_args():
             args.device_ids = range(total_gpus)
         else: # Train on specified GPUs
             assert total_gpus >= len(args.device_ids), '{} GPUs not available! Only {} GPU(s) available'.format(len(args.device_ids), total_gpus)
+        args.device = 'cuda'
+        args.cuda = True
     else:
         args.device = 'cpu'
+        args.cpu = True
 
     return args

@@ -5,7 +5,6 @@ import logging
 import time
 import sys
 import pickle
-from types import ModuleType
 from itertools import islice
 from pprint import pformat
 
@@ -267,9 +266,8 @@ def save_model(model, model_name, optimizer, args, epoch):
 
     # Save model on CPU
     model.to('cpu')
-    import pdb; pdb.set_trace()
     checkpoint = {
-        'model': model,
+        'model': model.module if args.device == 'cuda' else model,
         'optimizer': optimizer.state_dict()
     }
     torch.save(checkpoint, checkpoint_path)
